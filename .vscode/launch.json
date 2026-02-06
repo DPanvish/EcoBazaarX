@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-EcoBazaarX",
+            "request": "launch",
+            "mainClass": "com.ecobazaar.backend.BackendApplication",
+            "projectName": "backend", 
+            "env": {
+                "DB_URL": "jdbc:mysql://localhost:3306/ecobazaarx_db",
+                "DB_USER": "root",
+                "DB_PASSWORD": "Panvish@9885",
+                "JWT_SECRET": "JWT#Panvish"
+            }
+        }
+    ]
+}
