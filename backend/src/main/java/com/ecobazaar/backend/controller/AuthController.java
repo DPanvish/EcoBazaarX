@@ -1,13 +1,18 @@
 package com.ecobazaar.backend.controller;
 
-import com.ecobazaar.backend.model.User;
-import com.ecobazaar.backend.repository.UserRepository;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import com.ecobazaar.backend.model.User;
+import com.ecobazaar.backend.repository.UserRepository;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,8 +34,10 @@ public class AuthController {
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        if (user.getRole() == null) user.setRole("ROLE_USER");
-        
+        if (user.getRole() == null || user.getRole().isEmpty()) {
+            user.setRole("ROLE_USER");
+        } 
+
         userRepository.save(user);
         return ResponseEntity.ok("User registered successfully!");
     }
