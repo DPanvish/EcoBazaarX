@@ -12,7 +12,7 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post('http://localhost:8080/api/auth/login', {
+            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
                 email, password
             });
             alert(`Welcome back, ${res.data.name}!`);
@@ -46,29 +46,33 @@ const Login = () => {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div>
-                        <label className="text-sm font-medium text-slate-300 ml-1">Email Address</label>
+                        <label htmlFor="login-email" className="text-sm font-medium text-slate-300 ml-1">Email Address</label>
                         <div className="relative mt-1">
                             <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                             <input 
                                 type="email" 
+                                id="login-email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
                                 placeholder="you@example.com"
+                                required
                             />
                         </div>
                     </div>
 
                     <div>
-                        <label className="text-sm font-medium text-slate-300 ml-1">Password</label>
+                        <label htmlFor="login-password" className="text-sm font-medium text-slate-300 ml-1">Password</label>
                         <div className="relative mt-1">
                             <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                             <input 
                                 type="password" 
                                 value={password}
+                                id="login-password"
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
                                 placeholder="••••••••"
+                                required
                             />
                         </div>
                     </div>
