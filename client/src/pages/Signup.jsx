@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { Leaf, Lock, Mail, User, ArrowRight, Briefcase } from 'lucide-react';
+import { Leaf, Lock, Mail, User, ArrowRight, Briefcase, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Signup = () => {
@@ -11,16 +11,45 @@ const Signup = () => {
         password: '',
         role: 'ROLE_USER' // Default role
     });
+    const [errors, setErrors] = useState({});
     const navigate = useNavigate();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\S+$).{8,}$/;
+
+    const validate = () => {
+        let tempErrors = {};
+        
+        if (!formData.fullName || formData.fullName.length < 3) 
+            tempErrors.fullName = "Name must be at least 3 characters.";
+            
+        if (!emailRegex.test(formData.email)) 
+            tempErrors.email = "Invalid email format.";
+            
+        if (!passwordRegex.test(formData.password)) 
+            tempErrors.password = "Password must be 8+ chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char.";
+
+        setErrors(tempErrors);
+        return Object.keys(tempErrors).length === 0; 
+    };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+
+        if (errors[e.target.name]) {
+            setErrors({ ...errors, [e.target.name]: null });
+        }
     };
 
     const handleSignup = async (e) => {
         e.preventDefault();
+
+        if (!validate()){ 
+            return;
+        }
+
         try {
-            await axios.post('http://localhost:8080/api/auth/register', formData);
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/register`, formData);
             alert('Registration Successful! Please Login.');
             navigate('/login');
         } catch (err) {
@@ -61,6 +90,7 @@ const Signup = () => {
                                 placeholder="John Doe" required
                             />
                         </div>
+                        {errors.fullName && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/> {errors.fullName}</p>}
                     </div>
 
                     {/* Email */}
@@ -74,6 +104,7 @@ const Signup = () => {
                                 placeholder="you@example.com" required
                             />
                         </div>
+                        {errors.email && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/> {errors.email}</p>}
                     </div>
 
                     {/* Role Selection Dropdown */}
@@ -109,6 +140,7 @@ const Signup = () => {
                                 placeholder="••••••••" required
                             />
                         </div>
+                        {errors.password && <p className="text-red-400 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/> {errors.password}</p>}
                     </div>
 
                     <button 
