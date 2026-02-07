@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ecobazaar.backend.model.User;
 import com.ecobazaar.backend.repository.UserRepository;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -27,17 +30,25 @@ public class AuthController {
 
     // --- REGISTER ---
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
+    public ResponseEntity<?> register(@Valid @RequestBody User user, BindingResult bindingResult) {
+        
+        // Check for Validation Errors (Regex failures)
+        if (bindingResult.hasErrors()) {
+            return ResponseEntity.badRequest().body(
+                bindingResult.getFieldError().getDefaultMessage()
+            );
+        }
+
         if (userRepository.existsByEmail(user.getEmail())) {
             return ResponseEntity.badRequest().body("Error: Email is already in use!");
         }
 
+        // Proceed with Registration
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-
         if (user.getRole() == null || user.getRole().isEmpty()) {
             user.setRole("ROLE_USER");
         } 
-
+        
         userRepository.save(user);
         return ResponseEntity.ok("User registered successfully!");
     }
