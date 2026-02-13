@@ -1,6 +1,8 @@
 package com.ecobazaar.backend.controller;
 
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,12 +16,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ecobazaar.backend.model.User;
 import com.ecobazaar.backend.repository.UserRepository;
+import com.ecobazaar.backend.service.EmailService;
 
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173") 
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true") 
 public class AuthController {
 
     @Autowired
@@ -71,5 +74,55 @@ public class AuthController {
         } else {
             return ResponseEntity.status(401).body("Invalid Credentials");
         }
+    }
+
+    // --- FORGOT PASSWORD (Generate Link) ---
+    @Autowired
+    private EmailService emailService; // Inject the service
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with this email"));
+
+        // Generate Token
+        String token = UUID.randomUUID().toString();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
+        userRepository.save(user);
+
+        try {
+            emailService.sendResetLink(email, token);
+            return ResponseEntity.ok("Reset link sent to your email!");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error sending email: " + e.getMessage());
+        }
+    }
+    
+    // --- RESET PASSWORD (Update Password) ---
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("newPassword");
+
+        User user = userRepository.findByResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid Token"));
+
+        // Check if token has expired
+        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("Token has expired");
+        }
+
+        // Update Password
+        user.setPassword(passwordEncoder.encode(newPassword));
+        
+        // Clear Token so it can't be used again
+        user.setResetToken(null);
+        user.setResetTokenExpiry(null);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Password reset successfully! Please login.");
     }
 }

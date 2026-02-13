@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Leaf, Lock, Mail, User, ArrowRight, Briefcase, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import axiosInstance from '../lib/axios';
 
 const Signup = () => {
     const [formData, setFormData] = useState({
@@ -49,7 +49,7 @@ const Signup = () => {
         }
 
         try {
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/register`, formData);
+            await axiosInstance.post("/auth/register", formData);
             alert('Registration Successful! Please Login.');
             navigate('/login');
         } catch (err) {
