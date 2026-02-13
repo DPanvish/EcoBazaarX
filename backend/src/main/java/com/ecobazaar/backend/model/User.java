@@ -1,5 +1,7 @@
 package com.ecobazaar.backend.model;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -44,4 +46,8 @@ public class User {
     private String fullName;
 
     private String role;
+
+    private String resetToken;
+
+    private LocalDateTime resetTokenExpiry;
 }

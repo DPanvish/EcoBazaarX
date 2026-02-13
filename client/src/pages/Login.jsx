@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Leaf, Lock, Mail, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import axiosInstance from "../lib/axios"
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -12,7 +13,7 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/auth/login`, {
+            const res = await axiosInstance.post("/auth/login", {
                 email, password
             });
             alert(`Welcome back, ${res.data.name}!`);
@@ -62,7 +63,17 @@ const Login = () => {
                     </div>
 
                     <div>
-                        <label htmlFor="login-password" className="text-sm font-medium text-slate-300 ml-1">Password</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-sm font-medium text-slate-300 ml-1">Password</label>
+                            
+                            {/* --- NEW ADDITION: Forgot Password Link --- */}
+                            <Link 
+                                to="/forgot-password" 
+                                className="text-xs font-medium text-green-400 hover:text-green-300 transition-colors"
+                            >
+                                Forgot Password?
+                            </Link>
+                        </div>
                         <div className="relative mt-1">
                             <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                             <input 
