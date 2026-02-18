@@ -66,7 +66,6 @@ const Login = () => {
                         <div className="flex justify-between items-center mb-1">
                             <label className="text-sm font-medium text-slate-300 ml-1">Password</label>
                             
-                            {/* --- NEW ADDITION: Forgot Password Link --- */}
                             <Link 
                                 to="/forgot-password" 
                                 className="text-xs font-medium text-green-400 hover:text-green-300 transition-colors"
