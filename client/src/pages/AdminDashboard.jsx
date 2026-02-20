@@ -7,6 +7,7 @@ import axiosInstance from '../lib/axios';
 const AdminDashboard = () => {
     const [products, setProducts] = useState([]);
     const [imageFile, setImageFile] = useState(null); 
+    const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState({
         name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false
     });
@@ -36,34 +37,44 @@ const AdminDashboard = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Create a FormData object (required for sending files)
-        const data = new FormData();
-        
-        // Append the product details as a single JSON string
-        data.append("product", new Blob([JSON.stringify(formData)], {
-            type: "application/json"
-        }));
-        
-        // Append the file if the user selected one
-        if (imageFile) {
-            data.append("image", imageFile);
-        }
+        let finalImageUrl = formData.imageUrl; 
 
         try {
-            await axiosInstance.post('/products/add', data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            // UPLOAD TO CLOUDINARY (If a file was selected)
+            if (imageFile) {
+                setUploading(true);
+                const cloudData = new FormData();
+                cloudData.append("file", imageFile);
+                cloudData.append("upload_preset", `${import.meta.env.VITE_CLOUDINARY_PRESET_NAME}`); 
+                cloudData.append("cloud_name", `${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}`); 
+
+                // Send direct to Cloudinary API
+                const cloudRes = await axios.post(
+                    `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, 
+                    cloudData
+                );
+                
+                finalImageUrl = cloudRes.data.secure_url; 
+            }
+
+            const productPayload = {
+                ...formData,
+                imageUrl: finalImageUrl 
+            };
+
+            await axiosInstance.post('/products/add', productPayload);
             
-            // Reset form on success
+            // RESET FORM
             loadProducts();
-            setFormData({ name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false });
-            setImageFile(null); 
-            // Reset the file input visually
-            document.getElementById('fileInput').value = ""; 
+            setFormData({ name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, imageUrl: '' });
+            setImageFile(null);
+            document.getElementById('fileInput').value = "";
+            setUploading(false);
             
         } catch (err) {
             console.error(err);
-            alert('Error adding product');
+            alert('Error publishing product. Check console.');
+            setUploading(false);
         }
     };
 
