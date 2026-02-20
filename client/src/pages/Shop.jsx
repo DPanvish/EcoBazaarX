@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ShoppingCart, Leaf, X } from 'lucide-react';
+import { ShoppingCart, Leaf, X, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axiosInstance from '../lib/axios';
+import { Link } from 'react-router-dom'
 
 const Shop = () => {
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         loadProducts();
@@ -29,6 +31,15 @@ const Shop = () => {
     const calculateTotalImpact = () => {
         return cart.reduce((acc, item) => acc + (item.co2Emission || 0), 0).toFixed(1);
     };
+
+    const filteredProducts = products.filter(product => {
+        const safeName = product.name || "";
+        const safeCategory = product.category || "";
+        const search = searchTerm.toLowerCase();
+        
+        return safeName.toLowerCase().includes(search) || 
+               safeCategory.toLowerCase().includes(search);
+    });
 
     return (
         <div className="min-h-screen bg-slate-950 text-white font-sans relative overflow-x-hidden">
@@ -61,38 +72,60 @@ const Shop = () => {
                     Every product has a hidden cost. We help you see it. Watch your carbon footprint as you shop and make mindful choices.
                 </p>
 
+                {/* Search Bar */}
+                <div className="max-w-xl mx-auto mb-12 relative group">
+                    <div className="absolute inset-0 bg-green-500/20 rounded-full blur-md transition-all group-hover:bg-green-500/30"></div>
+                    <div className="relative flex items-center bg-slate-900 border border-slate-700 rounded-full px-4 py-3 shadow-lg">
+                        <Search className="w-5 h-5 text-slate-400 mr-3" />
+                        <input 
+                            type="text" 
+                            placeholder="Search products or categories..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-transparent border-none outline-none text-white placeholder-slate-500"
+                        />
+                    </div>
+                </div>
+
                 {/* Products Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                    {products.map((product) => (
-                        <motion.div key={product.id} layout className="group relative bg-slate-900 border border-white/5 rounded-2xl overflow-hidden hover:border-green-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-green-900/20">
-                            <div className="h-48 md:h-64 overflow-hidden relative">
-                                {/* Use standard img tag assuming upload works, fallback to placeholder */}
-                                <img src={product.imageUrl || "https://via.placeholder.com/400"} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                {product.isEcoFriendly && (
-                                    <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                                        <Leaf size={12} /> Eco Choice
+                    {filteredProducts.length === 0 ? (
+                        <div className="col-span-full text-center text-slate-500 py-10">
+                            No products found matching "{searchTerm}"
+                        </div>
+                    ) : (
+                        filteredProducts.map((product) => (
+                            <motion.div key={product.id} layout className="group relative bg-slate-900 border border-white/5 rounded-2xl overflow-hidden hover:border-green-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-green-900/20">
+                                <div className="h-48 md:h-64 overflow-hidden relative">
+                                    <Link to={`/product/${product.id}`} className="h-48 md:h-64 overflow-hidden relative block">
+                                        <img src={product.imageUrl || "https://via.placeholder.com/400"} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                        {product.isEcoFriendly && (
+                                            <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                                                <Leaf size={12} /> Eco Choice
+                                            </div>
+                                        )}
+                                    </Link>
+                                </div>
+                                
+                                <div className="p-5">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="font-bold text-lg truncate pr-2">{product.name}</h3>
+                                        <span className="text-green-400 font-mono font-bold">${product.price}</span>
                                     </div>
-                                )}
-                            </div>
-                            
-                            <div className="p-5">
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-lg truncate pr-2">{product.name}</h3>
-                                    <span className="text-green-400 font-mono font-bold">${product.price}</span>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className={`w-2 h-2 rounded-full ${product.isEcoFriendly ? 'bg-green-500' : 'bg-red-500'}`} />
+                                        <span className="text-xs text-slate-400">{product.co2Emission} kg CO₂</span>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleAddToCart(product)}
+                                        className="w-full bg-slate-800 border border-slate-700 hover:border-green-500 text-white py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 group-hover:bg-green-500 group-hover:text-white"
+                                    >
+                                        Add to Cart
+                                    </button>
                                 </div>
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className={`w-2 h-2 rounded-full ${product.isEcoFriendly ? 'bg-green-500' : 'bg-red-500'}`} />
-                                    <span className="text-xs text-slate-400">{product.co2Emission} kg CO₂</span>
-                                </div>
-                                <button 
-                                    onClick={() => handleAddToCart(product)}
-                                    className="w-full bg-slate-800 border border-slate-700 hover:border-green-500 text-white py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 group-hover:bg-green-500 group-hover:text-white"
-                                >
-                                    Add to Cart
-                                </button>
-                            </div>
-                        </motion.div>
-                    ))}
+                            </motion.div>
+                        ))
+                    )}
                 </div>
             </div>
 

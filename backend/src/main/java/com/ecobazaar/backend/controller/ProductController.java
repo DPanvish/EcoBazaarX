@@ -37,6 +37,12 @@ public class ProductController {
         return productService.getAllProducts();
     }
 
+    // Public: Everyone can see a single product
+    @GetMapping("/{id}")
+    public Product getProductById(@PathVariable Long id) {
+        return productService.getProductById(id);
+    }
+
     // Admin Only: Add Product
     @PostMapping("/add")
     public Product addProduct(@RequestBody Product product) {
