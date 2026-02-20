@@ -18,8 +18,12 @@ public class ProductService {
         return productRepository.findAll();
     }
 
+    public Product getProductById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+    }
+
     public Product addProduct(Product product) {
-        // Here we could add logic to auto-calculate eco-score in the future
         return productRepository.save(product);
     }
 
@@ -29,19 +33,16 @@ public class ProductService {
             product.setDescription(updatedProduct.getDescription());
             product.setPrice(updatedProduct.getPrice());
             product.setCategory(updatedProduct.getCategory());
-            product.setImageUrl(updatedProduct.getImageUrl());
-            
-            // Eco Fields
+            product.setBrand(updatedProduct.getBrand());
+            product.setStockQuantity(updatedProduct.getStockQuantity());
+            product.setMaterial(updatedProduct.getMaterial());
+            product.setCertifications(updatedProduct.getCertifications());
+            product.setImageUrls(updatedProduct.getImageUrls());
             product.setCo2Emission(updatedProduct.getCo2Emission());
             product.setEcoFriendly(updatedProduct.isEcoFriendly());
             
             return productRepository.save(product);
         }).orElseThrow(() -> new RuntimeException("Product not found"));
-    }
-
-    public Product getProductById(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
     public void deleteProduct(Long id) {

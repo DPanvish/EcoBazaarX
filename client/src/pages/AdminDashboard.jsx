@@ -6,10 +6,11 @@ import axiosInstance from '../lib/axios';
 
 const AdminDashboard = () => {
     const [products, setProducts] = useState([]);
-    const [imageFile, setImageFile] = useState(null); 
+    const [imageFiles, setImageFiles] = useState([]); 
     const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState({
-        name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false
+        name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, imageUrl: '',
+        description: '', brand: '', stockQuantity: '', material: '', certifications: ''
     });
 
     useEffect(() => {
@@ -31,52 +32,49 @@ const AdminDashboard = () => {
     };
 
     const handleFileChange = (e) => {
-        setImageFile(e.target.files[0]);
+        setImageFiles(Array.from(e.target.files));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setUploading(true);
         
-        let finalImageUrl = formData.imageUrl; 
-
         try {
-            // UPLOAD TO CLOUDINARY (If a file was selected)
-            if (imageFile) {
-                setUploading(true);
-                const cloudData = new FormData();
-                cloudData.append("file", imageFile);
-                cloudData.append("upload_preset", `${import.meta.env.VITE_CLOUDINARY_PRESET_NAME}`); 
-                cloudData.append("cloud_name", `${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}`); 
+            const uploadedUrls = [];
 
-                // Send direct to Cloudinary API
-                const cloudRes = await axios.post(
-                    `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, 
-                    cloudData
-                );
-                
-                finalImageUrl = cloudRes.data.secure_url; 
+            if (imageFiles.length > 0) {
+                for (const file of imageFiles) {
+                    const cloudData = new FormData();
+                    cloudData.append("file", file);
+                    cloudData.append("upload_preset", `${import.meta.env.VITE_CLOUDINARY_PRESET_NAME}`); 
+
+                    const cloudRes = await axios.post(
+                        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, 
+                        cloudData
+                    );
+                    uploadedUrls.push(cloudRes.data.secure_url);
+                }
             }
 
             const productPayload = {
                 ...formData,
-                imageUrl: finalImageUrl 
+                imageUrls: uploadedUrls 
             };
 
             await axiosInstance.post('/products/add', productPayload);
-            
-            // RESET FORM
             loadProducts();
-            setFormData({ name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, imageUrl: '' });
-            setImageFile(null);
+            setFormData({ name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, description: '', brand: '', stockQuantity: '', material: '', certifications: '' });
+            setImageFiles([]);
             document.getElementById('fileInput').value = "";
             setUploading(false);
             
         } catch (err) {
             console.error(err);
-            alert('Error publishing product. Check console.');
+            alert('Error publishing product.');
             setUploading(false);
         }
     };
+
 
     const handleDelete = async (id) => {
         if(window.confirm("Delete this product?")) {
@@ -127,27 +125,48 @@ const AdminDashboard = () => {
                                 <input name="name" placeholder="Product Title" value={formData.name} onChange={handleChange} required
                                     className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
                                 
+                                <textarea name="description" placeholder="Detailed Product Description..." value={formData.description} onChange={handleChange} rows="3" required
+                                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none"></textarea>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <input name="price" type="number" step="0.01" placeholder="Price ($)" value={formData.price} onChange={handleChange} required
                                         className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                                    <input name="stockQuantity" type="number" placeholder="Stock Quantity" value={formData.stockQuantity} onChange={handleChange} required
+                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <input name="brand" placeholder="Brand Name" value={formData.brand} onChange={handleChange} required
+                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
                                     <input name="category" placeholder="Category" value={formData.category} onChange={handleChange} required
                                         className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
                                 </div>
 
+                                <div className="grid grid-cols-2 gap-4">
+                                    <input name="material" placeholder="Material (e.g., Bamboo)" value={formData.material} onChange={handleChange}
+                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
+                                    <input name="certifications" placeholder="Certifications (e.g., FairTrade)" value={formData.certifications} onChange={handleChange}
+                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
+                                </div>
+
                                 <div className="col-span-1 md:col-span-2 relative group mt-2">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl blur transition-all group-hover:bg-emerald-500/30"></div>
+                                    <div className="absolute inset-0 bg-linear-to-r from-emerald-500/20 to-teal-500/20 rounded-xl blur transition-all group-hover:bg-emerald-500/30"></div>
                                     <div className="relative bg-slate-950/50 border border-slate-800 border-dashed rounded-xl px-4 py-4 transition-all group-hover:border-emerald-500/50">
                                         <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
                                             <span className="text-sm text-slate-400 mb-2 group-hover:text-emerald-400 transition-colors">
-                                                {imageFile ? imageFile.name : "Click to upload product image"}
+                                                {imageFiles ? imageFiles.name : "Click to upload product image"}
                                             </span>
                                             <input 
                                                 id="fileInput"
                                                 type="file" 
                                                 accept="image/*" 
+                                                multiple // <-- ADD THIS
                                                 onChange={handleFileChange} 
                                                 className="hidden" 
                                             />
+                                            <span className="text-sm text-slate-400 mb-2 group-hover:text-emerald-400 transition-colors">
+                                                {imageFiles.length > 0 ? `${imageFiles.length} files selected` : "Click to upload product images"}
+                                            </span>
                                             <div className="bg-slate-800 px-4 py-1.5 rounded-md text-xs font-semibold text-white shadow-sm border border-slate-700 group-hover:bg-emerald-600 group-hover:border-emerald-500 transition-all">
                                                 Browse Files
                                             </div>
@@ -203,7 +222,7 @@ const AdminDashboard = () => {
                                     >
                                         {/* Image Section */}
                                         <div className="h-48 overflow-hidden relative bg-slate-800">
-                                            <img src={product.imageUrl || "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&q=80&w=600"} 
+                                            <img src={product.imageUrls[0] || "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&q=80&w=600"} 
                                                 alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                             <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-transparent to-transparent opacity-80" />
                                             

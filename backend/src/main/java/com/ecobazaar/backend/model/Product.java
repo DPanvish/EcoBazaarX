@@ -1,10 +1,16 @@
 package com.ecobazaar.backend.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,11 +34,22 @@ public class Product {
     
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    private String brand;
+    
+    private Integer stockQuantity;
+    
+    private String material; 
+    
+    private String certifications;
     
     @Column(nullable = false)
     private Double price;
     
-    private String imageUrl;
+    @ElementCollection
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_url")
+    private List<String> imageUrls = new ArrayList<>();
     
     private String category;
     

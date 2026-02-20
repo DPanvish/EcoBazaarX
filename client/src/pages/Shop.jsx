@@ -98,7 +98,11 @@ const Shop = () => {
                             <motion.div key={product.id} layout className="group relative bg-slate-900 border border-white/5 rounded-2xl overflow-hidden hover:border-green-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-green-900/20">
                                 <div className="h-48 md:h-64 overflow-hidden relative">
                                     <Link to={`/product/${product.id}`} className="h-48 md:h-64 overflow-hidden relative block">
-                                        <img src={product.imageUrl || "https://via.placeholder.com/400"} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                        <img 
+                                            src={product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls[0] : "https://via.placeholder.com/400"} 
+                                            alt={product.name} 
+                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                                        />
                                         {product.isEcoFriendly && (
                                             <div className="absolute top-3 left-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
                                                 <Leaf size={12} /> Eco Choice
