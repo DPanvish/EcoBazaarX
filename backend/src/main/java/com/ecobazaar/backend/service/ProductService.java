@@ -1,10 +1,12 @@
 package com.ecobazaar.backend.service;
 
-import com.ecobazaar.backend.model.Product;
-import com.ecobazaar.backend.repository.ProductRepository;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.List;
+
+import com.ecobazaar.backend.model.Product;
+import com.ecobazaar.backend.repository.ProductRepository;
 
 @Service
 public class ProductService {
@@ -35,6 +37,11 @@ public class ProductService {
             
             return productRepository.save(product);
         }).orElseThrow(() -> new RuntimeException("Product not found"));
+    }
+
+    public Product getProductById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
     public void deleteProduct(Long id) {
