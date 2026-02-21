@@ -3,9 +3,11 @@ import axios from 'axios';
 import { Plus, Trash, Edit, Leaf, Package, Activity, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axiosInstance from '../lib/axios';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { productApi } from '../lib/api';
 
 const AdminDashboard = () => {
-    const [products, setProducts] = useState([]);
+    // const [products, setProducts] = useState([]);
     const [imageFiles, setImageFiles] = useState([]); 
     const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState({
@@ -13,18 +15,48 @@ const AdminDashboard = () => {
         description: '', brand: '', stockQuantity: '', material: '', certifications: ''
     });
 
-    useEffect(() => {
-        loadProducts();
-    }, []);
+    const queryClient = useQueryClient();
 
-    const loadProducts = async () => {
-        try {
-            const res = await axiosInstance.get('/products');
-            setProducts(res.data);
-        } catch (err) {
-            console.error("Failed to load products", err);
+    const {data: products = [], isLoading: loading} = useQuery({
+        queryKey: ['products'],
+        queryFn: productApi.getAll,
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products']);
+        },
+        onError: (error) => {
+            console.error('Error fetching products:', error);
         }
-    };
+    });
+
+    const createProductMutation = useMutation({
+        mutationFn: productApi.add,
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products']);
+        },
+        onError: (error) => {
+            console.error('Error creating product:', error);
+        }
+    });
+
+    const updateProductMutation = useMutation({
+        mutationFn: productApi.update,
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products']);
+        },
+        onError: (error) => {
+            console.error('Error updating product:', error);
+        }
+    });
+
+    const deleteProductMutation = useMutation({
+        mutationFn: productApi.delete,
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products']);
+        },
+        onError: (error) => {
+            console.error('Error deleting product:', error);
+        }
+    })
 
     const handleChange = (e) => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -61,8 +93,7 @@ const AdminDashboard = () => {
                 imageUrls: uploadedUrls 
             };
 
-            await axiosInstance.post('/products/add', productPayload);
-            loadProducts();
+            createProductMutation.mutate(productPayload);
             setFormData({ name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, description: '', brand: '', stockQuantity: '', material: '', certifications: '' });
             setImageFiles([]);
             document.getElementById('fileInput').value = "";
@@ -78,8 +109,7 @@ const AdminDashboard = () => {
 
     const handleDelete = async (id) => {
         if(window.confirm("Delete this product?")) {
-            await axiosInstance.delete(`/products/${id}`);
-            loadProducts();
+            deleteProductMutation.mutate(id);
         }
     };
 

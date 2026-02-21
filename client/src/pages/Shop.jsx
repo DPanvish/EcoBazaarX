@@ -4,25 +4,26 @@ import { ShoppingCart, Leaf, X, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axiosInstance from '../lib/axios';
 import { Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { productApi } from '../lib/api';
 
 const Shop = () => {
-    const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        loadProducts();
-    }, []);
+    const queryClient = useQueryClient();
 
-    const loadProducts = async () => {
-        try {
-            const res = await axiosInstance.get('/products');
-            setProducts(res.data);
-        } catch (err) {
-            console.error("Error loading products");
+    const {data: products = [], isLoading: loading} = useQuery({
+        queryKey: ['products'],
+        queryFn: productApi.getAll,
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products']);
+        },
+        onError: (error) => {
+            console.error('Error fetching products:', error);
         }
-    };
+    });
 
     const handleAddToCart = (product) => {
         setCart([...cart, product]);

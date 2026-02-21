@@ -3,27 +3,20 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Leaf, ShoppingCart, Activity, ShieldCheck, Box, Tag, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axiosInstance from '../lib/axios';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { productApi } from '../lib/api';
 
 const ProductDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-    useEffect(() => {
-        const fetchProduct = async () => {
-            try {
-                const res = await axiosInstance.get(`/products/${id}`);
-                setProduct(res.data);
-                setLoading(false);
-            } catch (err) {
-                console.error("Failed to load product");
-                setLoading(false);
-            }
-        };
-        fetchProduct();
-    }, [id]);
+    const queryClient = useQueryClient();
+
+    const { data: product, isLoading: loading } = useQuery({
+        queryKey: ['product', id],
+        queryFn: () => productApi.getById(id),
+    });
 
     if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-green-400 font-bold text-xl tracking-widest animate-pulse">LOADING DETAILS...</div>;
     if (!product) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Product Not Found</div>;
