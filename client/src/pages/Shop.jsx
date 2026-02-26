@@ -11,6 +11,8 @@ const Shop = () => {
     const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('All');
+    const categories = ["All", "Home & Kitchen", "Fashion", "Health & Beauty", "Tech & Gadgets", "Groceries"];
 
     const queryClient = useQueryClient();
 
@@ -38,8 +40,10 @@ const Shop = () => {
         const safeCategory = product.category || "";
         const search = searchTerm.toLowerCase();
         
-        return safeName.toLowerCase().includes(search) || 
-               safeCategory.toLowerCase().includes(search);
+        const matchesSearch = safeName.toLowerCase().includes(search);
+        const matchesCategory = selectedCategory === "All" || safeCategory === selectedCategory;
+
+        return matchesSearch && matchesCategory;
     });
 
     return (
@@ -72,19 +76,39 @@ const Shop = () => {
                 <p className="text-slate-400 text-center max-w-2xl mx-auto mb-16">
                     Every product has a hidden cost. We help you see it. Watch your carbon footprint as you shop and make mindful choices.
                 </p>
+                
+                {/* Search & Filter Section */}
+                <div className="max-w-3xl mx-auto mb-12">
+                    {/* Search Bar */}
+                    <div className="relative group mb-6">
+                        <div className="absolute inset-0 bg-green-500/20 rounded-full blur-md transition-all group-hover:bg-green-500/30"></div>
+                        <div className="relative flex items-center bg-slate-900 border border-slate-700 rounded-full px-4 py-3 shadow-lg">
+                            <Search className="w-5 h-5 text-slate-400 mr-3" />
+                            <input 
+                                type="text" 
+                                placeholder="Search by product name..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-transparent border-none outline-none text-white placeholder-slate-500"
+                            />
+                        </div>
+                    </div>
 
-                {/* Search Bar */}
-                <div className="max-w-xl mx-auto mb-12 relative group">
-                    <div className="absolute inset-0 bg-green-500/20 rounded-full blur-md transition-all group-hover:bg-green-500/30"></div>
-                    <div className="relative flex items-center bg-slate-900 border border-slate-700 rounded-full px-4 py-3 shadow-lg">
-                        <Search className="w-5 h-5 text-slate-400 mr-3" />
-                        <input 
-                            type="text" 
-                            placeholder="Search products or categories..." 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-transparent border-none outline-none text-white placeholder-slate-500"
-                        />
+                    {/* Category Filter Pills */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3">
+                        {categories.map(category => (
+                            <button
+                                key={category}
+                                onClick={() => setSelectedCategory(category)}
+                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                                    selectedCategory === category 
+                                    ? 'bg-green-500 text-white shadow-lg shadow-green-500/30 scale-105' 
+                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700'
+                                }`}
+                            >
+                                {category}
+                            </button>
+                        ))}
                     </div>
                 </div>
 

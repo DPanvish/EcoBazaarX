@@ -14,6 +14,7 @@ const AdminDashboard = () => {
         name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, imageUrl: '',
         description: '', brand: '', stockQuantity: '', material: '', certifications: ''
     });
+    const CATEGORIES = ["Home & Kitchen", "Fashion", "Health & Beauty", "Tech & Gadgets", "Groceries"];
 
     const queryClient = useQueryClient();
 
@@ -165,11 +166,33 @@ const AdminDashboard = () => {
                                         className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4">
                                     <input name="brand" placeholder="Brand Name" value={formData.brand} onChange={handleChange} required
                                         className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
-                                    <input name="category" placeholder="Category" value={formData.category} onChange={handleChange} required
-                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                                </div>
+
+                                <div className="bg-slate-950/30 border border-slate-800/50 p-4 rounded-xl mt-2">
+                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-1">
+                                        Select Category
+                                    </label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {CATEGORIES.map(cat => (
+                                            <button
+                                                key={cat}
+                                                type="button" 
+                                                onClick={() => setFormData({ ...formData, category: cat })}
+                                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
+                                                    formData.category === cat
+                                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] border-transparent scale-105'
+                                                    : 'bg-slate-900 border border-slate-700 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-300 hover:bg-slate-800'
+                                                }`}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {/* Hidden input to ensure HTML validation still works if they forget to pick one */}
+                                    <input type="text" name="category" value={formData.category} readOnly required className="h-0 w-0 opacity-0 absolute" />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
