@@ -5,10 +5,13 @@ import { motion } from 'framer-motion';
 import axiosInstance from '../lib/axios';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '../lib/api';
+import { useCart } from '../context/CartContext';
 
 const ProductDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { addToCart } = useCart();
+    const [addedToCart, setAddedToCart] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     const queryClient = useQueryClient();
@@ -146,10 +149,15 @@ const ProductDetails = () => {
                         <div className="flex gap-4">
                             <button 
                                 disabled={!inStock}
+                                onClick={() => {
+                                    addToCart(product);
+                                    setAddedToCart(true);
+                                    setTimeout(() => setAddedToCart(false), 2000); 
+                                }}
                                 className={`flex-grow font-bold py-5 rounded-2xl shadow-lg flex justify-center items-center gap-3 transition-all transform ${inStock ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white shadow-green-900/50 hover:scale-[1.02]' : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'}`}
                             >
                                 <ShoppingCart size={22} /> 
-                                {inStock ? "Add to Impact Cart" : "Currently Unavailable"}
+                                {!inStock ? "Currently Unavailable" : addedToCart ? "Added to Cart!" : "Add to Impact Cart"}
                             </button>
                         </div>
                     </motion.div>

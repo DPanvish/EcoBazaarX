@@ -3,15 +3,18 @@ import axios from 'axios';
 import { ShoppingCart, Leaf, X, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axiosInstance from '../lib/axios';
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '../lib/api';
+import { useCart } from '../context/CartContext';
 
 const Shop = () => {
-    const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
+    const navigate = useNavigate();
+    const { cart, addToCart, removeFromCart, calculateTotalImpact } = useCart();
+
     const categories = ["All", "Home & Kitchen", "Fashion", "Health & Beauty", "Tech & Gadgets", "Groceries"];
 
     const queryClient = useQueryClient();
@@ -26,14 +29,6 @@ const Shop = () => {
             console.error('Error fetching products:', error);
         }
     });
-
-    const handleAddToCart = (product) => {
-        setCart([...cart, product]);
-    };
-
-    const calculateTotalImpact = () => {
-        return cart.reduce((acc, item) => acc + (item.co2Emission || 0), 0).toFixed(1);
-    };
 
     const filteredProducts = products.filter(product => {
         const safeName = product.name || "";
@@ -146,7 +141,7 @@ const Shop = () => {
                                         <span className="text-xs text-slate-400">{product.co2Emission} kg CO₂</span>
                                     </div>
                                     <button 
-                                        onClick={() => handleAddToCart(product)}
+                                        onClick={() => addToCart(product)}
                                         className="w-full bg-slate-800 border border-slate-700 hover:border-green-500 text-white py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center gap-2 group-hover:bg-green-500 group-hover:text-white"
                                     >
                                         Add to Cart
@@ -181,7 +176,7 @@ const Shop = () => {
                             ) : (
                                 cart.map((item, idx) => (
                                     <div key={idx} className="flex gap-4 items-center bg-slate-800/50 border border-white/5 p-3 rounded-xl">
-                                        <img src={item.imageUrl || "https://via.placeholder.com/100"} className="w-16 h-16 rounded-lg object-cover" />
+                                        <img src={item.imageUrls?.[0] || item.imageUrl || "https://via.placeholder.com/100"} className="w-16 h-16 rounded-lg object-cover" />
                                         <div className="flex-grow">
                                             <h4 className="font-bold text-sm text-white">{item.name}</h4>
                                             <p className="text-xs text-slate-400 font-mono">${item.price}</p>
@@ -214,7 +209,10 @@ const Shop = () => {
                                 <p className="text-[10px] text-slate-500 mt-2 text-center">Lower is better for the environment.</p>
                             </div>
 
-                            <button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/50 transition-all transform hover:scale-[1.02]">
+                            <button 
+                                onClick={() => navigate('/checkout')}
+                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-green-900/50 transition-all transform hover:scale-[1.02]"
+                            >
                                 Proceed to Checkout
                             </button>
                         </div>
