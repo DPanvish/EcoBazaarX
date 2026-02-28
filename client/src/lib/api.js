@@ -26,3 +26,15 @@ export const productApi = {
         return data;
     },
 }
+
+export const orderApi = {
+    create: async(order) => {
+        const {data} = await axiosInstance.post('/orders/create', order);
+        return data;
+    },
+
+    myOrders: async() => {
+        const {data} = await axiosInstance.get('/orders/my-orders');
+        return data;
+    },
+}

@@ -3,59 +3,95 @@ import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Leaf, ShieldCheck, ArrowRightIcon as ArrowRightRight, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axiosInstance from '../lib/axios';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { orderApi, productApi } from '../lib/api';
 
 const Checkout = () => {
-    const { cart, removeFromCart, calculateTotalImpact, calculateTotalPrice, clearCart, addToCart } = useCart();
+    const { cart, removeFromCart, calculateTotalImpact, calculateTotalPrice, clearCart, addToCart, swapCartItem } = useCart();
     const navigate = useNavigate();
     
-    const [allProducts, setAllProducts] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [isConfirmed, setIsConfirmed] = useState(false);
 
+    const queryClient = useQueryClient();
+
+    const {data: products = [], isLoading: loading} = useQuery({
+        queryKey: ['products'],
+        queryFn: productApi.getAll,
+        onSuccess: () => {
+            queryClient.invalidateQueries(['products']);
+        },
+        onError: (error) => {
+            console.error('Error fetching products:', error);
+        }
+    });
+
+    const createOrderMutation = useMutation({
+        mutationFn: (orderPayload) => orderApi.create(orderPayload),
+        onSuccess: () => {
+            setIsConfirmed(true);
+            clearCart();
+        },
+        onError: (error) => {
+            console.error('Error creating order:', error);
+            alert("There was an issue processing your order. Please try again.");
+        }
+    });
+
     useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const res = await axiosInstance.get('/products');
-                setAllProducts(res.data);
-                generateSuggestions(cart, res.data);
-            } catch (err) {
-                console.error("Failed to fetch products for suggestions", err);
-            }
-        };
-        fetchProducts();
-    }, [cart]); 
+        if (products.length > 0) {
+            generateSuggestions(cart, products);
+        }
+    }, [cart, products]); 
 
     const generateSuggestions = (currentCart, inventory) => {
         let newSuggestions = [];
         
         currentCart.forEach((cartItem, cartIndex) => {
-            if (!cartItem.isEcoFriendly) {
-                const betterAlternative = inventory.find(p => 
-                    p.category === cartItem.category && 
-                    p.isEcoFriendly && 
-                    p.id !== cartItem.id
-                );
+            
+            const cartEmission = parseFloat(cartItem.co2Emission) || 0;
+            const cartCategory = String(cartItem.category || "").toLowerCase().trim();
 
-                if (betterAlternative) {
-                    if (!newSuggestions.some(s => s.cartIndex === cartIndex)) {
-                        newSuggestions.push({ cartIndex, original: cartItem, alternative: betterAlternative });
-                    }
+            const betterOptions = inventory.filter(p => {
+                const pEmission = parseFloat(p.co2Emission) || 0;
+                const pCategory = String(p.category || "").toLowerCase().trim();
+
+                return pCategory === cartCategory && 
+                       p.id !== cartItem.id &&
+                       pEmission < cartEmission; 
+            });
+
+            if (betterOptions.length > 0) {
+                betterOptions.sort((a, b) => {
+                    return (parseFloat(a.co2Emission) || 0) - (parseFloat(b.co2Emission) || 0);
+                });
+                
+                const bestAlternative = betterOptions[0];
+
+                if (!newSuggestions.some(s => s.cartIndex === cartIndex)) {
+                    newSuggestions.push({ 
+                        cartIndex, 
+                        original: cartItem, 
+                        alternative: bestAlternative 
+                    });
                 }
             }
         });
+        
         setSuggestions(newSuggestions);
     };
 
     const handleSwap = (cartIndex, originalItem, alternativeItem) => {
-        removeFromCart(cartIndex);
-        addToCart(alternativeItem);
+        swapCartItem(cartIndex, alternativeItem);
     };
 
     const handleCheckout = () => {
-        // Here we need to send the order to your Spring Boot backend
-        setIsConfirmed(true);
-        clearCart();
+        const orderPayload = {
+            items: cart,
+            totalAmount: calculateTotalPrice(),
+            totalCo2: calculateTotalImpact()
+        };
+        createOrderMutation.mutate(orderPayload);
     };
 
     if (isConfirmed) {

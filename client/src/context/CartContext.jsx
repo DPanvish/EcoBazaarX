@@ -25,8 +25,16 @@ export const CartProvider = ({ children }) => {
         return cart.reduce((acc, item) => acc + (item.price || 0), 0).toFixed(2);
     };
 
+    const swapCartItem = (indexToSwap, newItem) => {
+        setCart(prevCart => {
+            const updatedCart = [...prevCart];
+            updatedCart[indexToSwap] = newItem; 
+            return updatedCart;
+        });
+    };
+
     return (
-        <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, calculateTotalImpact, calculateTotalPrice }}>
+        <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, calculateTotalImpact, calculateTotalPrice, swapCartItem }}>
             {children}
         </CartContext.Provider>
     );
