@@ -17,6 +17,18 @@ const Login = () => {
                 email, password
             });
             alert(`Welcome back, ${res.data.name}!`);
+
+            const token = res.data.token || res.data;
+            if(token){
+                localStorage.setItem('token', token);
+                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            }else{
+                localStorage.removeItem('token');
+                delete axiosInstance.defaults.headers.common['Authorization'];
+                console.error("Backend returned no token");
+                return;
+            }
+
             // Store role/user data here later
             if(res.data.role === 'ROLE_ADMIN') navigate('/admin');
             else navigate('/shop');
