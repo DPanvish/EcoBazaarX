@@ -56,6 +56,9 @@ public class AuthController {
         return ResponseEntity.ok("User registered successfully!");
     }
 
+    @Autowired
+    private JwtUtils jwtUtils; 
+
     // --- LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
@@ -66,8 +69,12 @@ public class AuthController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (passwordEncoder.matches(password, user.getPassword())) {
+            
+            String jwt = jwtUtils.generateToken(user.getEmail()); 
+
             return ResponseEntity.ok(Map.of(
                 "message", "Login Successful",
+                "token", jwt,  
                 "role", user.getRole(),
                 "name", user.getFullName()
             ));
