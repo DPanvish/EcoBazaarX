@@ -17,6 +17,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.JoinColumn;
+import java.util.List;
+import java.util.ArrayList;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -50,4 +55,7 @@ public class User {
     private String resetToken;
 
     private LocalDateTime resetTokenExpiry;
+
+    @OneToMany(mappedBy = "userId")
+    private List<EcoAchievement> achievements = new ArrayList<>();
 }

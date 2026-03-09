@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Trash, Edit, Leaf, Package, Activity, AlertCircle } from 'lucide-react';
+import { Plus, Trash, Edit, Leaf, Package, Activity, AlertCircle, BarChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axiosInstance from '../lib/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,7 +12,7 @@ const AdminDashboard = () => {
     const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState({
         name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, imageUrl: '',
-        description: '', brand: '', stockQuantity: '', material: '', certifications: ''
+        description: '', brand: '', stockQuantity: '', material: '', certifications: '', carbonSaving: ''
     });
     const CATEGORIES = ["Home & Kitchen", "Fashion", "Health & Beauty", "Tech & Gadgets", "Groceries"];
 
@@ -95,7 +95,7 @@ const AdminDashboard = () => {
             };
 
             createProductMutation.mutate(productPayload);
-            setFormData({ name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, description: '', brand: '', stockQuantity: '', material: '', certifications: '' });
+            setFormData({ name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, description: '', brand: '', stockQuantity: '', material: '', certifications: '', carbonSaving: '' });
             setImageFiles([]);
             document.getElementById('fileInput').value = "";
             setUploading(false);
@@ -235,6 +235,8 @@ const AdminDashboard = () => {
                                 </label>
                                 <input name="co2Emission" type="number" step="0.1" placeholder="CO2 Emission (kg)" value={formData.co2Emission} onChange={handleChange} required
                                     className="w-full bg-slate-950/50 border border-emerald-900/50 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all mb-4" />
+                                <input name="carbonSaving" type="number" step="0.1" placeholder="Carbon Saving (kg)" value={formData.carbonSaving} onChange={handleChange}
+                                    className="w-full bg-slate-950/50 border border-emerald-900/50 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all mb-4" />
                                 
                                 <label className="flex items-center gap-3 cursor-pointer group">
                                     <div className="relative flex items-center">
@@ -254,6 +256,16 @@ const AdminDashboard = () => {
                                 </div>
                             </button>
                         </form>
+                    </div>
+                     {/* Product Analytics */}
+                     <div className="mt-8 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <BarChart className="text-blue-400" />
+                            Product Analytics
+                        </h2>
+                        <div className="h-64 flex items-center justify-center text-slate-500">
+                            Sales vs. Carbon Savings Chart Coming Soon
+                        </div>
                     </div>
                 </motion.div>
 
@@ -307,6 +319,10 @@ const AdminDashboard = () => {
                                                 <div className="flex items-center gap-2">
                                                     <div className={`w-2 h-2 rounded-full ${product.co2Emission > 5 ? "bg-red-500" : "bg-emerald-500 animate-pulse"}`} />
                                                     <span className="text-sm text-slate-300 font-mono">{product.co2Emission} kg CO₂</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Leaf size={12} className="text-emerald-400" />
+                                                    <span className="text-sm text-slate-300 font-mono">{product.carbonSaving} kg</span>
                                                 </div>
                                             </div>
                                         </div>
