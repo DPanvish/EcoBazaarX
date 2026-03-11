@@ -33,6 +33,11 @@ public class CarbonController {
         return ResponseEntity.ok(carbonService.getCarbonFootprintHistoryForProduct(productId));
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<CarbonFootprint>> getCarbonFootprintHistoryForUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(carbonService.getCarbonFootprintHistoryForUser(userId));
+    }
+
     @GetMapping("/product/{productId}/report")
     public ResponseEntity<byte[]> downloadReport(@PathVariable Long productId) {
         String html = carbonService.generateCarbonFootprintReport(productId);

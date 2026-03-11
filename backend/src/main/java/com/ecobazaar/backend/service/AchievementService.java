@@ -18,7 +18,6 @@ public class AchievementService {
     }
 
     public List<EcoAchievement> getAchievementsForUser(Long userId) {
-        // This is a simplified implementation. In a real application, you would have a more complex query.
-        return ecoAchievementRepository.findAll();
+        return ecoAchievementRepository.findByUserId(userId);
     }
 }

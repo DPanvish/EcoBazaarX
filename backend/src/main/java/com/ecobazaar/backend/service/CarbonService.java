@@ -18,8 +18,11 @@ public class CarbonService {
     }
 
     public List<CarbonFootprint> getCarbonFootprintHistoryForProduct(Long productId) {
-        // This is a simplified implementation. In a real application, you would have a more complex query.
-        return carbonFootprintRepository.findAll();
+        return carbonFootprintRepository.findByProductId(productId);
+    }
+
+    public List<CarbonFootprint> getCarbonFootprintHistoryForUser(Long userId) {
+        return carbonFootprintRepository.findByUserId(userId);
     }
 
     public String generateCarbonFootprintReport(Long productId) {

@@ -1,20 +1,59 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Leaf, Award } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import EcoBadges from '../components/EcoBadges';
-import axios from 'axios';
+import axiosInstance from '../lib/axios';
+import { useQuery } from '@tanstack/react-query';
+import { carbonApi, achievementApi, productApi, user } from '../lib/api';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 const UserDashboard = () => {
+    const [userId, setUserId] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const currentUser = user.getCurrentUser();
+        if (currentUser) {
+            setUserId(currentUser.id);
+        } else {
+            navigate('/login');
+        }
+    }, [navigate]);
+
+    const { data: carbonData = [] } = useQuery({
+        queryKey: ['carbonFootprint', userId],
+        queryFn: () => carbonApi.getForUser(userId),
+        enabled: !!userId,
+    });
+
+    const { data: achievements = [] } = useQuery({
+        queryKey: ['achievements', userId],
+        queryFn: () => achievementApi.getForUser(userId),
+        enabled: !!userId,
+    });
+
+    const { data: products = [] } = useQuery({
+        queryKey: ['products'],
+        queryFn: productApi.getAll,
+    });
+
+    const topEcoProducts = products.filter(p => p.isEcoFriendly).slice(0, 3);
 
     const handleDownloadReport = () => {
-        axios.get('http://localhost:8080/api/carbon/product/1/report', { responseType: 'blob' })
+        if (!carbonData || carbonData.length === 0) {
+            alert('No carbon data available to generate a report.');
+            return;
+        }
+        const productId = carbonData[0].productId;
+        axiosInstance.get(`/carbon/product/${productId}/report`, { responseType: 'blob' })
             .then(response => {
                 const url = window.URL.createObjectURL(new Blob([response.data]));
                 const link = document.createElement('a');
                 link.href = url;
-                link.setAttribute('download', 'report.pdf');
+                link.setAttribute('download', 'eco-report.pdf');
                 document.body.appendChild(link);
                 link.click();
+                link.remove();
             })
             .catch(error => {
                 console.error('Error downloading report:', error);
@@ -50,9 +89,23 @@ const UserDashboard = () => {
                             <Leaf className="text-emerald-400" />
                             Monthly Carbon Footprint
                         </h2>
-                        {/* Chart will go here */}
-                        <div className="h-64 flex items-center justify-center text-slate-500">
-                            Chart Component Coming Soon
+                        <div className="h-64">
+                            {carbonData && carbonData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={carbonData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                        <XAxis dataKey="calculationDate" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                                        <Legend wrapperStyle={{ fontSize: '14px' }} />
+                                        <Line type="monotone" dataKey="carbonFootprint" stroke="#10b981" name="Carbon Footprint (kg)" />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-slate-500">
+                                    <p>No carbon data yet. Purchase a product to see your footprint.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -62,20 +115,26 @@ const UserDashboard = () => {
                             <Award className="text-yellow-400" />
                             Achievements
                         </h2>
-                        <EcoBadges />
+                        <EcoBadges achievements={achievements} />
                     </div>
                 </div>
 
                 {/* Top Eco-Friendly Products */}
                 <div className="mt-8 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
                     <h2 className="text-xl font-bold text-white mb-4">Top Eco-Friendly Products</h2>
-                    <div className="text-slate-500">
-                        Product listing coming soon.
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {topEcoProducts.map(product => (
+                            <div key={product.id} className="bg-slate-800/50 p-4 rounded-lg">
+                                <h3 className="font-bold text-lg text-white">{product.name}</h3>
+                                <p className="text-sm text-slate-400">{product.category}</p>
+                                <p className="text-lg font-semibold text-emerald-400 mt-2">${product.price}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                 {/* Download Report Button */}
-                 <div className="mt-8 text-center">
+                {/* Download Report Button */}
+                <div className="mt-8 text-center">
                     <button onClick={handleDownloadReport} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
                         Download Eco-Report
                     </button>

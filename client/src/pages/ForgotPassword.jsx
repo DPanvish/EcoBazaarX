@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Mail, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axiosInstance from '../lib/axios';
@@ -11,7 +10,7 @@ const ForgotPassword = () => {
     const handleRequest = async (e) => {
         e.preventDefault();
         try {
-            axiosInstance.post("/auth/forgot-password", { email });
+            await axiosInstance.post("/auth/forgot-password", { email });
             setMessage('Reset link generated! Check the Email.');
         } catch (err) {
             alert('Error: ' + (err.response?.data || err.message));

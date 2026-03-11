@@ -23,5 +23,6 @@ public class Cart {
     // If a Cart is deleted, all CartItems inside it are deleted too
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "cart_id")
+    @Builder.Default
     private List<CartItem> items = new ArrayList<>();
 }

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Plus, Trash, Edit, Leaf, Package, Activity, AlertCircle, BarChart } from 'lucide-react';
+import { Plus, Trash, Leaf, Package, Activity, AlertCircle, BarChart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axiosInstance from '../lib/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { productApi } from '../lib/api';
+import { productApi, analyticsApi } from '../lib/api';
+import { ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 const AdminDashboard = () => {
     // const [products, setProducts] = useState([]);
-    const [imageFiles, setImageFiles] = useState([]); 
+    const [imageFiles, setImageFiles] = useState([]);
     const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState({
         name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, imageUrl: '',
@@ -18,15 +18,9 @@ const AdminDashboard = () => {
 
     const queryClient = useQueryClient();
 
-    const {data: products = [], isLoading: loading} = useQuery({
+    const { data: products = [], isLoading: loading } = useQuery({
         queryKey: ['products'],
         queryFn: productApi.getAll,
-        onSuccess: () => {
-            queryClient.invalidateQueries(['products']);
-        },
-        onError: (error) => {
-            console.error('Error fetching products:', error);
-        }
     });
 
     const createProductMutation = useMutation({
@@ -59,6 +53,11 @@ const AdminDashboard = () => {
         }
     })
 
+    const { data: analyticsData = [] } = useQuery({
+        queryKey: ['productSalesAnalytics'],
+        queryFn: analyticsApi.getProductSales,
+    });
+
     const handleChange = (e) => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
         setFormData({ ...formData, [e.target.name]: value });
@@ -71,7 +70,7 @@ const AdminDashboard = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setUploading(true);
-        
+
         try {
             const uploadedUrls = [];
 
@@ -79,10 +78,10 @@ const AdminDashboard = () => {
                 for (const file of imageFiles) {
                     const cloudData = new FormData();
                     cloudData.append("file", file);
-                    cloudData.append("upload_preset", `${import.meta.env.VITE_CLOUDINARY_PRESET_NAME}`); 
+                    cloudData.append("upload_preset", `${import.meta.env.VITE_CLOUDINARY_PRESET_NAME}`);
 
                     const cloudRes = await axios.post(
-                        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, 
+                        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
                         cloudData
                     );
                     uploadedUrls.push(cloudRes.data.secure_url);
@@ -91,7 +90,7 @@ const AdminDashboard = () => {
 
             const productPayload = {
                 ...formData,
-                imageUrls: uploadedUrls 
+                imageUrls: uploadedUrls
             };
 
             createProductMutation.mutate(productPayload);
@@ -99,7 +98,7 @@ const AdminDashboard = () => {
             setImageFiles([]);
             document.getElementById('fileInput').value = "";
             setUploading(false);
-            
+
         } catch (err) {
             console.error(err);
             alert('Error publishing product.');
@@ -109,7 +108,7 @@ const AdminDashboard = () => {
 
 
     const handleDelete = async (id) => {
-        if(window.confirm("Delete this product?")) {
+        if (window.confirm("Delete this product?")) {
             deleteProductMutation.mutate(id);
         }
     };
@@ -137,16 +136,16 @@ const AdminDashboard = () => {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
-                
+
                 {/* LEFT COLUMN: The Form */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}
                     className="lg:col-span-4 h-fit"
                 >
                     <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
                         {/* Decorative top border */}
                         <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-teal-400" />
-                        
+
                         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                             <Plus className="text-emerald-400" /> Add to Inventory
                         </h2>
@@ -155,7 +154,7 @@ const AdminDashboard = () => {
                             <div className="space-y-4">
                                 <input name="name" placeholder="Product Title" value={formData.name} onChange={handleChange} required
                                     className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
-                                
+
                                 <textarea name="description" placeholder="Detailed Product Description..." value={formData.description} onChange={handleChange} rows="3" required
                                     className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none"></textarea>
 
@@ -179,13 +178,12 @@ const AdminDashboard = () => {
                                         {CATEGORIES.map(cat => (
                                             <button
                                                 key={cat}
-                                                type="button" 
+                                                type="button"
                                                 onClick={() => setFormData({ ...formData, category: cat })}
-                                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                                                    formData.category === cat
+                                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${formData.category === cat
                                                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] border-transparent scale-105'
                                                     : 'bg-slate-900 border border-slate-700 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-300 hover:bg-slate-800'
-                                                }`}
+                                                    }`}
                                             >
                                                 {cat}
                                             </button>
@@ -207,19 +205,16 @@ const AdminDashboard = () => {
                                     <div className="relative bg-slate-950/50 border border-slate-800 border-dashed rounded-xl px-4 py-4 transition-all group-hover:border-emerald-500/50">
                                         <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
                                             <span className="text-sm text-slate-400 mb-2 group-hover:text-emerald-400 transition-colors">
-                                                {imageFiles ? imageFiles.name : "Click to upload product image"}
-                                            </span>
-                                            <input 
-                                                id="fileInput"
-                                                type="file" 
-                                                accept="image/*" 
-                                                multiple // <-- ADD THIS
-                                                onChange={handleFileChange} 
-                                                className="hidden" 
-                                            />
-                                            <span className="text-sm text-slate-400 mb-2 group-hover:text-emerald-400 transition-colors">
                                                 {imageFiles.length > 0 ? `${imageFiles.length} files selected` : "Click to upload product images"}
                                             </span>
+                                            <input
+                                                id="fileInput"
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleFileChange}
+                                                className="hidden"
+                                            />
                                             <div className="bg-slate-800 px-4 py-1.5 rounded-md text-xs font-semibold text-white shadow-sm border border-slate-700 group-hover:bg-emerald-600 group-hover:border-emerald-500 transition-all">
                                                 Browse Files
                                             </div>
@@ -237,7 +232,7 @@ const AdminDashboard = () => {
                                     className="w-full bg-slate-950/50 border border-emerald-900/50 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all mb-4" />
                                 <input name="carbonSaving" type="number" step="0.1" placeholder="Carbon Saving (kg)" value={formData.carbonSaving} onChange={handleChange}
                                     className="w-full bg-slate-950/50 border border-emerald-900/50 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all mb-4" />
-                                
+
                                 <label className="flex items-center gap-3 cursor-pointer group">
                                     <div className="relative flex items-center">
                                         <input type="checkbox" name="isEcoFriendly" checked={formData.isEcoFriendly} onChange={handleChange} className="sr-only peer" />
@@ -257,14 +252,30 @@ const AdminDashboard = () => {
                             </button>
                         </form>
                     </div>
-                     {/* Product Analytics */}
-                     <div className="mt-8 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+                    {/* Product Analytics */}
+                    <div className="mt-8 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
                         <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                             <BarChart className="text-blue-400" />
                             Product Analytics
                         </h2>
-                        <div className="h-64 flex items-center justify-center text-slate-500">
-                            Sales vs. Carbon Savings Chart Coming Soon
+                        <div className="h-64">
+                            {analyticsData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RechartsBarChart data={analyticsData}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                                        <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
+                                        <Legend wrapperStyle={{ fontSize: '14px' }} />
+                                        <Bar dataKey="sales" fill="#3b82f6" name="Sales" />
+                                        <Bar dataKey="carbonSavings" fill="#10b981" name="Carbon Savings (kg)" />
+                                    </RechartsBarChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-slate-500">
+                                    <p>No analytics data yet. Place an order to see the chart.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </motion.div>
@@ -280,19 +291,19 @@ const AdminDashboard = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                             <AnimatePresence>
                                 {products.map((product, index) => (
-                                    <motion.div 
+                                    <motion.div
                                         key={product.id}
                                         initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: index * 0.05 }}
                                         className="group bg-slate-900/40 backdrop-blur-sm border border-white/5 rounded-2xl overflow-hidden hover:border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 relative flex flex-col"
                                     >
                                         {/* Image Section */}
                                         <div className="h-48 overflow-hidden relative bg-slate-800">
-                                            <img src={product.imageUrls[0] || "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&q=80&w=600"} 
+                                            <img src={product.imageUrls[0] || "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&q=80&w=600"}
                                                 alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                             <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-transparent to-transparent opacity-80" />
-                                            
+
                                             {/* Delete Button (Appears on hover) */}
-                                            <button onClick={() => handleDelete(product.id)} 
+                                            <button onClick={() => handleDelete(product.id)}
                                                 className="absolute top-3 right-3 p-2 bg-red-500/80 backdrop-blur-md text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:scale-110 transition-all duration-200 shadow-lg">
                                                 <Trash size={16} />
                                             </button>
@@ -314,7 +325,7 @@ const AdminDashboard = () => {
                                                 </div>
                                                 <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{product.category}</span>
                                             </div>
-                                            
+
                                             <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
                                                 <div className="flex items-center gap-2">
                                                     <div className={`w-2 h-2 rounded-full ${product.co2Emission > 5 ? "bg-red-500" : "bg-emerald-500 animate-pulse"}`} />

@@ -2,13 +2,15 @@ package com.ecobazaar.backend.config;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter; // Double check this import path!
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.ecobazaar.backend.controller.JwtUtils;
 
@@ -19,6 +21,8 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     @Autowired
     private JwtUtils jwtUtils;
@@ -31,12 +35,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
-        
-        System.out.println("FILTER HIT - Request Path: " + request.getRequestURI());
-        System.out.println("FILTER HIT - Auth Header: " + authHeader);
+
+        logger.debug("Request Path: {}", request.getRequestURI());
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("No Bearer token found. Passing down the chain.");
+            logger.debug("No Bearer token found. Passing down the chain.");
             filterChain.doFilter(request, response);
             return;
         }
@@ -46,22 +49,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
             userEmail = jwtUtils.extractUsername(jwt);
-            System.out.println("Extracted Email: " + userEmail);
+            logger.debug("Extracted Email: {}", userEmail);
 
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
                 if (jwtUtils.validateToken(jwt)) {
-                    System.out.println("Token is VALID. Authenticating user.");
+                    logger.debug("Token is VALID. Authenticating user.");
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 } else {
-                    System.out.println("Token is INVALID.");
+                    logger.warn("Token is INVALID.");
                 }
             }
         } catch (Exception e) {
-            System.out.println("Exception in JwtAuthFilter: " + e.getMessage());
+            logger.error("Exception in JwtAuthFilter: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

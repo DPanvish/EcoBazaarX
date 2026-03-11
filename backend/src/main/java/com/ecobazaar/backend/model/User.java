@@ -17,11 +17,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.JoinColumn;
-import java.util.List;
-import java.util.ArrayList;
-
 @Entity
 @Table(name = "users")
 @Data
@@ -40,10 +35,7 @@ public class User {
 
     @Column(nullable = false)
     @NotBlank(message = "Password is required")
-    @Pattern(
-        regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$",
-        message = "Password must be 8+ chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char"
-    )
+    @Pattern(regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$", message = "Password must be 8+ chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char")
     private String password;
 
     @NotBlank(message = "Full name is required")
@@ -56,6 +48,4 @@ public class User {
 
     private LocalDateTime resetTokenExpiry;
 
-    @OneToMany(mappedBy = "userId")
-    private List<EcoAchievement> achievements = new ArrayList<>();
 }
