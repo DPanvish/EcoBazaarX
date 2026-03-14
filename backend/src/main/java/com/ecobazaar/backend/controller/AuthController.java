@@ -53,10 +53,6 @@ public class AuthController {
         return ResponseEntity.ok("User registered successfully!");
     }
 
-    @Autowired
-    private JwtUtils jwtUtils;
-
-    // --- LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
         String email = loginData.get("email");
@@ -69,14 +65,8 @@ public class AuthController {
         }
 
         if (passwordEncoder.matches(password, user.getPassword())) {
-
-            String jwt = jwtUtils.generateToken(user.getEmail(), user.getId(), user.getRole());
-
-            return ResponseEntity.ok(Map.of(
-                    "message", "Login Successful",
-                    "token", jwt,
-                    "role", user.getRole(),
-                    "name", user.getFullName()));
+            // Reverted to a simple success response without JWT
+            return ResponseEntity.ok(Map.of("message", "Login Successful"));
         } else {
             return ResponseEntity.status(401).body("Invalid Credentials");
         }

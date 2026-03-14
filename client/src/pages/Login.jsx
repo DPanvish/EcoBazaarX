@@ -12,29 +12,11 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const res = await axiosInstance.post("/auth/login", {
+            await axiosInstance.post("/auth/login", {
                 email, password
             });
-            alert(`Welcome back, ${res.data.name}!`);
-
-            const token = res.data.token || res.data;
-            if (token) {
-                localStorage.setItem('token', token);
-                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            } else {
-                localStorage.removeItem('token');
-                delete axiosInstance.defaults.headers.common['Authorization'];
-                console.error("Backend returned no token");
-                return;
-            }
-
-            // Store role/user data here later
-            if (res.data.role) {
-                localStorage.setItem('role', res.data.role);
-            }
-
-            if (res.data.role === 'ROLE_ADMIN') navigate('/admin');
-            else navigate('/shop');
+            alert(`Welcome back!`);
+            navigate('/shop');
         } catch (err) {
             alert('Login failed: ' + (err.response?.data || err.message));
         }

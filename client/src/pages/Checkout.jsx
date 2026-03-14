@@ -76,7 +76,7 @@ const Checkout = () => {
     };
 
     const handleSwap = (cartIndex, originalItem, alternativeItem) => {
-        swapCartItem(originalItem.id, alternativeItem);
+        swapCartItem(cartIndex, alternativeItem);
     };
 
     const handleCheckout = () => {
@@ -194,9 +194,7 @@ const Checkout = () => {
                                         </div>
                                         <div className="text-right flex flex-col items-end">
                                             <span className="font-mono font-bold">${item.price}</span>
-                                            <button onClick={() => removeFromCart(item.id)} className="text-[10px] text-red-400 hover:underline mt-1">
-                                                Remove
-                                            </button>
+                                            <button onClick={() => removeFromCart(idx)} className="text-[10px] text-red-400 hover:underline mt-1">Remove</button>
                                         </div>
                                     </div>
                                 ))
