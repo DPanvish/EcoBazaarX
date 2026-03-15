@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ShoppingCart, Leaf, X, Search } from 'lucide-react';
+import { ShoppingCart, Leaf, X, Search, Activity, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
 import axiosInstance from '../lib/axios';
 import { Link, useNavigate } from 'react-router-dom'
@@ -49,15 +49,33 @@ const Shop = () => {
                     <div className="bg-green-500 p-2 rounded-lg"><Leaf className="text-white w-5 h-5" /></div>
                     <span className="text-xl font-bold tracking-tight">EcoBazaar<span className="text-green-400">X</span></span>
                 </div>
-                
-                <button onClick={() => setIsCartOpen(true)} className="relative p-2 hover:bg-white/10 rounded-full transition-colors">
-                    <ShoppingCart className="w-6 h-6 text-slate-300" />
-                    {cart.length > 0 && (
-                        <span className="absolute top-0 right-0 bg-green-500 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]">
-                            {cart.length}
-                        </span>
-                    )}
-                </button>
+
+                <div className="flex items-center gap-6">
+                    <button 
+                        onClick={() => navigate('/dashboard')} 
+                        className="flex items-center gap-2 text-green-400 hover:text-green-300 font-bold transition-all hover:scale-105"
+                    >
+                        <Activity className="w-5 h-5" />
+                        <span className="hidden sm:inline">My Impact</span>
+                    </button>
+
+                    <button 
+                        onClick={() => navigate('/my-orders')} 
+                        className="flex items-center gap-2 text-slate-300 hover:text-green-400 font-bold transition-all hover:scale-105"
+                    >
+                        <Package className="w-5 h-5" />
+                        <span className="hidden sm:inline">My Orders</span>
+                    </button>
+
+                    <button onClick={() => setIsCartOpen(true)} className="relative p-2 hover:bg-white/10 rounded-full transition-colors">
+                        <ShoppingCart className="w-6 h-6 text-slate-300" />
+                        {cart.length > 0 && (
+                            <span className="absolute top-0 right-0 bg-green-500 text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]">
+                                {cart.length}
+                            </span>
+                        )}
+                    </button>
+                </div>
             </nav>
 
             {/* Hero Section */}

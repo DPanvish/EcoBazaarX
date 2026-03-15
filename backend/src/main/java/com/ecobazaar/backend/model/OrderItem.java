@@ -29,4 +29,7 @@ public class OrderItem {
     
     @Column(name = "co2_emission_kg")
     private Double co2Emission;
+    
+    @Column(name = "is_eco_friendly")
+    private Boolean isEcoFriendly; 
 }

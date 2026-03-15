@@ -32,12 +32,14 @@ public class OrderController {
         Double totalCo2 = Double.valueOf(orderRequest.get("totalCo2").toString());
         
         List<Map<String, Object>> cartItems = (List<Map<String, Object>>) orderRequest.get("items");
+        
         List<OrderItem> orderItems = cartItems.stream().map(item -> {
             return OrderItem.builder()
                     .productId(Long.valueOf(item.get("id").toString()))
                     .productName(item.get("name").toString())
                     .price(Double.valueOf(item.get("price").toString()))
                     .co2Emission(Double.valueOf(item.get("co2Emission").toString()))
+                    .isEcoFriendly(Boolean.valueOf(item.getOrDefault("isEcoFriendly", false).toString()))
                     .build();
         }).collect(Collectors.toList());
 

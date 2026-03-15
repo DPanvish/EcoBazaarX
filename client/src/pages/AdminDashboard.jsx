@@ -1,22 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Trash, Edit, Leaf, Package, Activity, AlertCircle } from 'lucide-react';
+import { Plus, Trash, Edit, Leaf, Package, Activity, AlertCircle, BarChart3, Users, DollarSign, ShoppingBag, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import axiosInstance from '../lib/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '../lib/api';
 
 const AdminDashboard = () => {
-    // const [products, setProducts] = useState([]);
     const [imageFiles, setImageFiles] = useState([]); 
     const [uploading, setUploading] = useState(false);
     const [formData, setFormData] = useState({
         name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, imageUrl: '',
         description: '', brand: '', stockQuantity: '', material: '', certifications: ''
     });
+    
+    // Tab and Analytics State
+    const [activeTab, setActiveTab] = useState('inventory'); 
+    const [analyticsData, setAnalyticsData] = useState([]);
+    const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+    const [summaryData, setSummaryData] = useState(null); 
+
     const CATEGORIES = ["Home & Kitchen", "Fashion", "Health & Beauty", "Tech & Gadgets", "Groceries"];
 
     const queryClient = useQueryClient();
+
+    // Fetch Analytics Data when tab is switched
+    useEffect(() => {
+        if (activeTab === 'analytics' && analyticsData.length === 0) {
+            setLoadingAnalytics(true);
+            
+            // Fetch both top products AND the new platform summary simultaneously
+            Promise.all([
+                axiosInstance.get('/analytics/admin/top-products'),
+                axiosInstance.get('/analytics/admin/summary')
+            ])
+            .then(([productsRes, summaryRes]) => {
+                setAnalyticsData(productsRes.data);
+                setSummaryData(summaryRes.data);
+            })
+            .catch(err => console.error("Failed to fetch admin analytics", err))
+            .finally(() => setLoadingAnalytics(false));
+        }
+    }, [activeTab]);
 
     const {data: products = [], isLoading: loading} = useQuery({
         queryKey: ['products'],
@@ -36,16 +62,6 @@ const AdminDashboard = () => {
         },
         onError: (error) => {
             console.error('Error creating product:', error);
-        }
-    });
-
-    const updateProductMutation = useMutation({
-        mutationFn: productApi.update,
-        onSuccess: () => {
-            queryClient.invalidateQueries(['products']);
-        },
-        onError: (error) => {
-            console.error('Error updating product:', error);
         }
     });
 
@@ -107,7 +123,6 @@ const AdminDashboard = () => {
         }
     };
 
-
     const handleDelete = async (id) => {
         if(window.confirm("Delete this product?")) {
             deleteProductMutation.mutate(id);
@@ -121,201 +136,320 @@ const AdminDashboard = () => {
             <div className="fixed bottom-[-10%] right-[-5%] w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
 
             {/* Navbar / Header */}
-            <header className="sticky top-0 z-50 bg-slate-900/50 backdrop-blur-md border-b border-white/10 px-8 py-4 flex justify-between items-center shadow-lg">
+            <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-white/10 px-8 py-4 flex justify-between items-center shadow-lg">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-linear-to-br from-emerald-400 to-green-600 rounded-lg shadow-lg shadow-green-500/20">
+                    <div className="p-2 bg-gradient-to-br from-emerald-400 to-green-600 rounded-lg shadow-lg shadow-green-500/20">
                         <Activity className="text-white w-6 h-6" />
                     </div>
-                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white to-slate-400">
+                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
                         Command Center
                     </h1>
                 </div>
-                <div className="flex items-center gap-4 bg-slate-800/50 px-4 py-2 rounded-full border border-white/5">
-                    <Package className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm font-medium">Total Items: {products.length}</span>
+
+                <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/5">
+                    <button 
+                        onClick={() => setActiveTab('inventory')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'inventory' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <Package size={16} /> Inventory
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('analytics')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'analytics' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <BarChart3 size={16} /> Analytics
+                    </button>
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10">
                 
-                {/* LEFT COLUMN: The Form */}
-                <motion.div 
-                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}
-                    className="lg:col-span-4 h-fit"
-                >
-                    <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-                        {/* Decorative top border */}
-                        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-emerald-500 to-teal-400" />
-                        
-                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <Plus className="text-emerald-400" /> Add to Inventory
-                        </h2>
-
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="space-y-4">
-                                <input name="name" placeholder="Product Title" value={formData.name} onChange={handleChange} required
-                                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                {/* INVENTORY VIEW */}
+                {activeTab === 'inventory' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        {/* LEFT COLUMN: The Form */}
+                        <motion.div 
+                            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}
+                            className="lg:col-span-4 h-fit"
+                        >
+                            <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-400" />
                                 
-                                <textarea name="description" placeholder="Detailed Product Description..." value={formData.description} onChange={handleChange} rows="3" required
-                                    className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none"></textarea>
+                                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                                    <Plus className="text-emerald-400" /> Add to Inventory
+                                </h2>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input name="price" type="number" step="0.01" placeholder="Price ($)" value={formData.price} onChange={handleChange} required
-                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
-                                    <input name="stockQuantity" type="number" placeholder="Stock Quantity" value={formData.stockQuantity} onChange={handleChange} required
-                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
-                                </div>
+                                <form onSubmit={handleSubmit} className="space-y-5">
+                                    <div className="space-y-4">
+                                        <input name="name" placeholder="Product Title" value={formData.name} onChange={handleChange} required
+                                            className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                                        
+                                        <textarea name="description" placeholder="Detailed Product Description..." value={formData.description} onChange={handleChange} rows="3" required
+                                            className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all resize-none"></textarea>
 
-                                <div className="grid grid-cols-1 gap-4">
-                                    <input name="brand" placeholder="Brand Name" value={formData.brand} onChange={handleChange} required
-                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
-                                </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <input name="price" type="number" step="0.01" placeholder="Price ($)" value={formData.price} onChange={handleChange} required
+                                                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all" />
+                                            <input name="stockQuantity" type="number" placeholder="Stock Quantity" value={formData.stockQuantity} onChange={handleChange} required
+                                                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
+                                        </div>
 
-                                <div className="bg-slate-950/30 border border-slate-800/50 p-4 rounded-xl mt-2">
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-1">
-                                        Select Category
-                                    </label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {CATEGORIES.map(cat => (
-                                            <button
-                                                key={cat}
-                                                type="button" 
-                                                onClick={() => setFormData({ ...formData, category: cat })}
-                                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
-                                                    formData.category === cat
-                                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] border-transparent scale-105'
-                                                    : 'bg-slate-900 border border-slate-700 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-300 hover:bg-slate-800'
-                                                }`}
-                                            >
-                                                {cat}
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {/* Hidden input to ensure HTML validation still works if they forget to pick one */}
-                                    <input type="text" name="category" value={formData.category} readOnly required className="h-0 w-0 opacity-0 absolute" />
-                                </div>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <input name="brand" placeholder="Brand Name" value={formData.brand} onChange={handleChange} required
+                                                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
+                                        </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <input name="material" placeholder="Material (e.g., Bamboo)" value={formData.material} onChange={handleChange}
-                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
-                                    <input name="certifications" placeholder="Certifications (e.g., FairTrade)" value={formData.certifications} onChange={handleChange}
-                                        className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
-                                </div>
-
-                                <div className="col-span-1 md:col-span-2 relative group mt-2">
-                                    <div className="absolute inset-0 bg-linear-to-r from-emerald-500/20 to-teal-500/20 rounded-xl blur transition-all group-hover:bg-emerald-500/30"></div>
-                                    <div className="relative bg-slate-950/50 border border-slate-800 border-dashed rounded-xl px-4 py-4 transition-all group-hover:border-emerald-500/50">
-                                        <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
-                                            <span className="text-sm text-slate-400 mb-2 group-hover:text-emerald-400 transition-colors">
-                                                {imageFiles ? imageFiles.name : "Click to upload product image"}
-                                            </span>
-                                            <input 
-                                                id="fileInput"
-                                                type="file" 
-                                                accept="image/*" 
-                                                multiple // <-- ADD THIS
-                                                onChange={handleFileChange} 
-                                                className="hidden" 
-                                            />
-                                            <span className="text-sm text-slate-400 mb-2 group-hover:text-emerald-400 transition-colors">
-                                                {imageFiles.length > 0 ? `${imageFiles.length} files selected` : "Click to upload product images"}
-                                            </span>
-                                            <div className="bg-slate-800 px-4 py-1.5 rounded-md text-xs font-semibold text-white shadow-sm border border-slate-700 group-hover:bg-emerald-600 group-hover:border-emerald-500 transition-all">
-                                                Browse Files
+                                        <div className="bg-slate-950/30 border border-slate-800/50 p-4 rounded-xl mt-2">
+                                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 ml-1">
+                                                Select Category
+                                            </label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {CATEGORIES.map(cat => (
+                                                    <button
+                                                        key={cat}
+                                                        type="button" 
+                                                        onClick={() => setFormData({ ...formData, category: cat })}
+                                                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${
+                                                            formData.category === cat
+                                                            ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] border-transparent scale-105'
+                                                            : 'bg-slate-900 border border-slate-700 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-300 hover:bg-slate-800'
+                                                        }`}
+                                                    >
+                                                        {cat}
+                                                    </button>
+                                                ))}
                                             </div>
+                                            <input type="text" name="category" value={formData.category} readOnly required className="h-0 w-0 opacity-0 absolute" />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <input name="material" placeholder="Material (e.g., Bamboo)" value={formData.material} onChange={handleChange}
+                                                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
+                                            <input name="certifications" placeholder="Certifications (e.g., FairTrade)" value={formData.certifications} onChange={handleChange}
+                                                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-emerald-500" />
+                                        </div>
+
+                                        <div className="col-span-1 md:col-span-2 relative group mt-2">
+                                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-xl blur transition-all group-hover:bg-emerald-500/30"></div>
+                                            <div className="relative bg-slate-950/50 border border-slate-800 border-dashed rounded-xl px-4 py-4 transition-all group-hover:border-emerald-500/50">
+                                                <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
+                                                    <span className="text-sm text-slate-400 mb-2 group-hover:text-emerald-400 transition-colors">
+                                                        {imageFiles ? imageFiles.name : "Click to upload product image"}
+                                                    </span>
+                                                    <input 
+                                                        id="fileInput" type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" 
+                                                    />
+                                                    <span className="text-sm text-slate-400 mb-2 group-hover:text-emerald-400 transition-colors">
+                                                        {imageFiles.length > 0 ? `${imageFiles.length} files selected` : "Click to upload product images"}
+                                                    </span>
+                                                    <div className="bg-slate-800 px-4 py-1.5 rounded-md text-xs font-semibold text-white shadow-sm border border-slate-700 group-hover:bg-emerald-600 group-hover:border-emerald-500 transition-all">
+                                                        Browse Files
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Eco Section Highlights */}
+                                    <div className="bg-emerald-950/30 border border-emerald-900/50 rounded-xl p-4 mt-2">
+                                        <label className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2 block flex items-center gap-1">
+                                            <Leaf size={14} /> Environmental Impact
+                                        </label>
+                                        <input name="co2Emission" type="number" step="0.1" placeholder="CO2 Emission (kg)" value={formData.co2Emission} onChange={handleChange} required
+                                            className="w-full bg-slate-950/50 border border-emerald-900/50 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all mb-4" />
+                                        
+                                        <label className="flex items-center gap-3 cursor-pointer group">
+                                            <div className="relative flex items-center">
+                                                <input type="checkbox" name="isEcoFriendly" checked={formData.isEcoFriendly} onChange={handleChange} className="sr-only peer" />
+                                                <div className="w-10 h-6 bg-slate-800 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
+                                                <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4 shadow-sm"></div>
+                                            </div>
+                                            <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Mark as Eco-Friendly Alternative</span>
                                         </label>
                                     </div>
-                                </div>
-                            </div>
 
-                            {/* Eco Section Highlights */}
-                            <div className="bg-emerald-950/30 border border-emerald-900/50 rounded-xl p-4 mt-2">
-                                <label className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2 block flex items-center gap-1">
-                                    <Leaf size={14} /> Environmental Impact
-                                </label>
-                                <input name="co2Emission" type="number" step="0.1" placeholder="CO2 Emission (kg)" value={formData.co2Emission} onChange={handleChange} required
-                                    className="w-full bg-slate-950/50 border border-emerald-900/50 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all mb-4" />
-                                
-                                <label className="flex items-center gap-3 cursor-pointer group">
-                                    <div className="relative flex items-center">
-                                        <input type="checkbox" name="isEcoFriendly" checked={formData.isEcoFriendly} onChange={handleChange} className="sr-only peer" />
-                                        <div className="w-10 h-6 bg-slate-800 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
-                                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4 shadow-sm"></div>
-                                    </div>
-                                    <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Mark as Eco-Friendly Alternative</span>
-                                </label>
+                                    <button type="submit" className="w-full relative group overflow-hidden rounded-xl p-[1px]">
+                                        <span className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-500 rounded-xl opacity-70 group-hover:opacity-100 transition-opacity duration-300"></span>
+                                        <div className="relative bg-slate-950 px-4 py-3 rounded-xl flex items-center justify-center gap-2 group-hover:bg-opacity-0 transition-all duration-300">
+                                            <span className="font-bold text-white tracking-wide">Publish Product</span>
+                                            <Plus className="w-5 h-5 text-white" />
+                                        </div>
+                                    </button>
+                                </form>
                             </div>
+                        </motion.div>
 
-                            <button type="submit" className="w-full relative group overflow-hidden rounded-xl p-[1px]">
-                                <span className="absolute inset-0 bg-linear-to-r from-emerald-500 via-teal-500 to-emerald-500 rounded-xl opacity-70 group-hover:opacity-100 transition-opacity duration-300"></span>
-                                <div className="relative bg-slate-950 px-4 py-3 rounded-xl flex items-center justify-center gap-2 group-hover:bg-opacity-0 transition-all duration-300">
-                                    <span className="font-bold text-white tracking-wide">Publish Product</span>
-                                    <Plus className="w-5 h-5 text-white" />
+                        {/* RIGHT COLUMN: The Grid */}
+                        <div className="lg:col-span-8">
+                            {products.length === 0 ? (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-2xl py-20">
+                                    <AlertCircle className="w-12 h-12 mb-4 opacity-50" />
+                                    <p>Inventory is empty. Add your first product.</p>
                                 </div>
-                            </button>
-                        </form>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    <AnimatePresence>
+                                        {products.map((product, index) => (
+                                            <motion.div 
+                                                key={product.id}
+                                                initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: index * 0.05 }}
+                                                className="group bg-slate-900/40 backdrop-blur-sm border border-white/5 rounded-2xl overflow-hidden hover:border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 relative flex flex-col"
+                                            >
+                                                <div className="h-48 overflow-hidden relative bg-slate-800">
+                                                    <img src={product.imageUrls[0] || "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&q=80&w=600"} 
+                                                        alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />
+                                                    
+                                                    <button onClick={() => handleDelete(product.id)} 
+                                                        className="absolute top-3 right-3 p-2 bg-red-500/80 backdrop-blur-md text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:scale-110 transition-all duration-200 shadow-lg">
+                                                        <Trash size={16} />
+                                                    </button>
+
+                                                    {product.isEcoFriendly && (
+                                                        <div className="absolute top-3 left-3 bg-emerald-500/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
+                                                            <Leaf size={12} /> Eco Choice
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="p-5 grow flex flex-col justify-between">
+                                                    <div>
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <h3 className="font-bold text-lg text-white leading-tight truncate pr-2">{product.name}</h3>
+                                                            <span className="font-mono font-semibold text-emerald-400">${product.price}</span>
+                                                        </div>
+                                                        <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{product.category}</span>
+                                                    </div>
+                                                    
+                                                    <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-2 h-2 rounded-full ${product.co2Emission > 5 ? "bg-red-500" : "bg-emerald-500 animate-pulse"}`} />
+                                                            <span className="text-sm text-slate-300 font-mono">{product.co2Emission} kg CO₂</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </AnimatePresence>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </motion.div>
+                )}
 
-                {/* RIGHT COLUMN: The Grid */}
-                <div className="lg:col-span-8">
-                    {products.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-2xl py-20">
-                            <AlertCircle className="w-12 h-12 mb-4 opacity-50" />
-                            <p>Inventory is empty. Add your first product.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                            <AnimatePresence>
-                                {products.map((product, index) => (
-                                    <motion.div 
-                                        key={product.id}
-                                        initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: index * 0.05 }}
-                                        className="group bg-slate-900/40 backdrop-blur-sm border border-white/5 rounded-2xl overflow-hidden hover:border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 relative flex flex-col"
-                                    >
-                                        {/* Image Section */}
-                                        <div className="h-48 overflow-hidden relative bg-slate-800">
-                                            <img src={product.imageUrls[0] || "https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&q=80&w=600"} 
-                                                alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                                            <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-transparent to-transparent opacity-80" />
-                                            
-                                            {/* Delete Button (Appears on hover) */}
-                                            <button onClick={() => handleDelete(product.id)} 
-                                                className="absolute top-3 right-3 p-2 bg-red-500/80 backdrop-blur-md text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:scale-110 transition-all duration-200 shadow-lg">
-                                                <Trash size={16} />
-                                            </button>
-
-                                            {/* Eco Badge */}
-                                            {product.isEcoFriendly && (
-                                                <div className="absolute top-3 left-3 bg-emerald-500/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-lg">
-                                                    <Leaf size={12} /> Eco Choice
-                                                </div>
-                                            )}
+                {/* ANALYTICS VIEW */}
+                {activeTab === 'analytics' && (
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+                        
+                        {loadingAnalytics || !summaryData ? (
+                            <div className="h-96 flex items-center justify-center text-emerald-500 font-bold animate-pulse">Loading Platform Data...</div>
+                        ) : (
+                            <>
+                                {/* KPI CARDS */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                    <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl flex items-center gap-4">
+                                        <div className="p-4 bg-blue-500/20 text-blue-400 rounded-2xl"><DollarSign size={28} /></div>
+                                        <div>
+                                            <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Total Revenue</p>
+                                            <h3 className="text-2xl font-black text-white">${summaryData.totalRevenue.toFixed(2)}</h3>
                                         </div>
+                                    </div>
+                                    <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl flex items-center gap-4">
+                                        <div className="p-4 bg-emerald-500/20 text-emerald-400 rounded-2xl"><Leaf size={28} /></div>
+                                        <div>
+                                            <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Platform CO₂ Saved</p>
+                                            <h3 className="text-2xl font-black text-white">{summaryData.totalCo2Saved.toFixed(1)} kg</h3>
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl flex items-center gap-4">
+                                        <div className="p-4 bg-purple-500/20 text-purple-400 rounded-2xl"><ShoppingBag size={28} /></div>
+                                        <div>
+                                            <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Total Orders</p>
+                                            <h3 className="text-2xl font-black text-white">{summaryData.totalOrders}</h3>
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl flex items-center gap-4">
+                                        <div className="p-4 bg-orange-500/20 text-orange-400 rounded-2xl"><Users size={28} /></div>
+                                        <div>
+                                            <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Registered Users</p>
+                                            <h3 className="text-2xl font-black text-white">{summaryData.totalUsers}</h3>
+                                        </div>
+                                    </div>
+                                </div>
 
-                                        {/* Content Section */}
-                                        <div className="p-5 grow flex flex-col justify-between">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {/* BAR CHART */}
+                                    <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
+                                        <div className="mb-6">
+                                            <h2 className="text-xl font-bold text-white">Top Eco-Products</h2>
+                                            <p className="text-sm text-slate-400">Highest carbon savings by volume.</p>
+                                        </div>
+                                        {analyticsData.length === 0 ? (
+                                            <div className="h-64 flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-700 rounded-2xl">
+                                                <BarChart3 className="w-8 h-8 mb-2 opacity-50" />
+                                                <p className="text-sm">No eco-friendly sales yet.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="h-64 w-full">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <BarChart data={analyticsData} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                                                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#334155" />
+                                                        <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} />
+                                                        <YAxis dataKey="productName" type="category" width={100} tick={{ fill: '#f8fafc', fontSize: 12 }} axisLine={false} tickLine={false} />
+                                                        <Tooltip cursor={{ fill: '#1e293b' }} contentStyle={{ backgroundColor: '#0f172a', borderColor: '#10b981', borderRadius: '12px', color: '#fff' }} />
+                                                        <Bar dataKey="unitsSold" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+                                                    </BarChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* RECENT ORDERS TABLE */}
+                                    <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+                                        <div className="mb-6 flex justify-between items-center">
                                             <div>
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <h3 className="font-bold text-lg text-white leading-tight truncate pr-2">{product.name}</h3>
-                                                    <span className="font-mono font-semibold text-emerald-400">${product.price}</span>
-                                                </div>
-                                                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{product.category}</span>
+                                                <h2 className="text-xl font-bold text-white">Recent Transactions</h2>
+                                                <p className="text-sm text-slate-400">Latest platform orders.</p>
                                             </div>
-                                            
-                                            <div className="mt-4 pt-4 border-t border-white/5 flex justify-between items-center">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-2 h-2 rounded-full ${product.co2Emission > 5 ? "bg-red-500" : "bg-emerald-500 animate-pulse"}`} />
-                                                    <span className="text-sm text-slate-300 font-mono">{product.co2Emission} kg CO₂</span>
-                                                </div>
-                                            </div>
+                                            <Clock className="text-slate-500" />
                                         </div>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
-                    )}
-                </div>
+                                        
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left">
+                                                <thead>
+                                                    <tr className="text-slate-400 text-sm border-b border-slate-800">
+                                                        <th className="pb-3 font-medium">User</th>
+                                                        <th className="pb-3 font-medium">Amount</th>
+                                                        <th className="pb-3 font-medium">CO₂ Saved</th>
+                                                        <th className="pb-3 font-medium">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {summaryData.recentOrders.length === 0 ? (
+                                                        <tr><td colSpan="4" className="text-center py-8 text-slate-500 text-sm">No orders found.</td></tr>
+                                                    ) : (
+                                                        summaryData.recentOrders.map((order, idx) => (
+                                                            <tr key={idx} className="border-b border-slate-800/50 last:border-0">
+                                                                <td className="py-4 text-sm text-white truncate max-w-[120px]">{order.userEmail}</td>
+                                                                <td className="py-4 text-sm font-mono text-emerald-400">${order.totalAmount.toFixed(2)}</td>
+                                                                <td className="py-4 text-sm text-slate-300">{order.totalCo2Saved.toFixed(1)} kg</td>
+                                                                <td className="py-4">
+                                                                    <span className="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-1 rounded-md font-bold">
+                                                                        {order.status}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </motion.div>
+                )}
 
             </main>
         </div>
