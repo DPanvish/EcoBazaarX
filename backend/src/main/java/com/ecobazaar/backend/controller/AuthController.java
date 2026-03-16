@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,7 +21,6 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true") 
 public class AuthController {
 
     @Autowired
@@ -34,12 +32,11 @@ public class AuthController {
     // --- REGISTER ---
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody User user, BindingResult bindingResult) {
-        
+
         // Check for Validation Errors (Regex failures)
         if (bindingResult.hasErrors()) {
             return ResponseEntity.badRequest().body(
-                bindingResult.getFieldError().getDefaultMessage()
-            );
+                    bindingResult.getFieldError().getDefaultMessage());
         }
 
         if (userRepository.existsByEmail(user.getEmail())) {
@@ -50,34 +47,26 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         if (user.getRole() == null || user.getRole().isEmpty()) {
             user.setRole("ROLE_USER");
-        } 
-        
+        }
+
         userRepository.save(user);
         return ResponseEntity.ok("User registered successfully!");
     }
 
-    @Autowired
-    private JwtUtils jwtUtils; 
-
-    // --- LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
         String email = loginData.get("email");
         String password = loginData.get("password");
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(401).body("Invalid Credentials");
+        }
 
         if (passwordEncoder.matches(password, user.getPassword())) {
-            
-            String jwt = jwtUtils.generateToken(user.getEmail()); 
-
-            return ResponseEntity.ok(Map.of(
-                "message", "Login Successful",
-                "token", jwt,  
-                "role", user.getRole(),
-                "name", user.getFullName()
-            ));
+            // Reverted to a simple success response without JWT
+            return ResponseEntity.ok(Map.of("message", "Login Successful"));
         } else {
             return ResponseEntity.status(401).body("Invalid Credentials");
         }
@@ -90,7 +79,7 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
         String email = request.get("email");
-        
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with this email"));
 
@@ -107,7 +96,7 @@ public class AuthController {
             return ResponseEntity.status(500).body("Error sending email: " + e.getMessage());
         }
     }
-    
+
     // --- RESET PASSWORD (Update Password) ---
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
@@ -124,7 +113,7 @@ public class AuthController {
 
         // Update Password
         user.setPassword(passwordEncoder.encode(newPassword));
-        
+
         // Clear Token so it can't be used again
         user.setResetToken(null);
         user.setResetTokenExpiry(null);

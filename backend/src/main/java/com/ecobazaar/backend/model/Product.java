@@ -54,7 +54,10 @@ public class Product {
     private String category;
     
     @Column(name = "co2_emission_kg", nullable = false)
-    private Double co2Emission; 
+    private Double co2Emission;
+
+    @Column(name = "carbon_saving")
+    private Double carbonSaving;
 
     @Column(name = "is_eco_friendly")
     private boolean isEcoFriendly; 

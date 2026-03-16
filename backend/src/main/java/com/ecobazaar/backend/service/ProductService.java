@@ -39,8 +39,10 @@ public class ProductService {
             product.setCertifications(updatedProduct.getCertifications());
             product.setImageUrls(updatedProduct.getImageUrls());
             product.setCo2Emission(updatedProduct.getCo2Emission());
+            product.setCarbonSaving(updatedProduct.getCarbonSaving());
+            product.setAlternativeProductId(updatedProduct.getAlternativeProductId());
             product.setEcoFriendly(updatedProduct.isEcoFriendly());
-            
+
             return productRepository.save(product);
         }).orElseThrow(() -> new RuntimeException("Product not found"));
     }
