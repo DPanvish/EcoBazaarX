@@ -9,7 +9,6 @@ import Shop from "./pages/Shop";
 import ProductDetails from "./pages/ProductDetails";
 import { CartProvider } from "./context/CartContext";
 import Checkout from "./pages/Checkout";
-import UserDashboard from "./pages/UserDashboard";
 import MyOrders from "./pages/MyOrders";
 import SellerDashboard from "./pages/SellerDashboard";
 

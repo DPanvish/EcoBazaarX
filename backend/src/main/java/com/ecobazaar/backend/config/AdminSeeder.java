@@ -19,18 +19,18 @@ public class AdminSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (!userRepository.existsByEmail("admin@ecobazaar.com")) {
+        if (!userRepository.existsByEmail("boss@ecobazaar.com")) {
             User admin = User.builder()
-                    .fullName("Super Admin")
-                    .email("admin@ecobazaar.com")
-                    .password(passwordEncoder.encode("Admin@1234!"))
+                    .fullName("Platform Boss")
+                    .email("boss@ecobazaar.com")
+                    .password(passwordEncoder.encode("Admin@1234!")) 
                     .role("ROLE_ADMIN")
                     .build();
             
             userRepository.save(admin);
             System.out.println("=================================================");
             System.out.println(" DEFAULT ADMIN CREATED:");
-            System.out.println(" Email: admin@ecobazaar.com");
+            System.out.println(" Email: boss@ecobazaar.com");
             System.out.println(" Password: Admin@1234!");
             System.out.println("=================================================");
         }

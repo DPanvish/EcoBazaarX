@@ -11,33 +11,30 @@ const Login = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        
+        const loginPayload = {
+            email: email,
+            password: password
+        };
+        
         try {
-            await axiosInstance.post("/auth/login", {
-                email, password
-            });
-            alert(`Welcome back, ${res.data.name}!`);
-
-            const token = res.data.token || res.data;
-            if(token){
-                localStorage.setItem('token', token);
-                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            }else{
-                localStorage.removeItem('token');
-                delete axiosInstance.defaults.headers.common['Authorization'];
-                console.error("Backend returned no token");
-                return;
-            }
-
-            // Store role/user data here later
-            if(res.data.role === 'ROLE_ADMIN') {
+            const res = await axiosInstance.post('/auth/login', loginPayload);
+            
+            localStorage.setItem('token', res.data.token);
+            
+            const userRole = res.data.role;
+            if (userRole === 'ROLE_ADMIN') {
                 navigate('/admin');
-            } else if (res.data.role === 'ROLE_SELLER') {
-                navigate('/seller'); 
+            } else if (userRole === 'ROLE_SELLER') {
+                navigate('/seller');
             } else {
                 navigate('/shop');
             }
+            
         } catch (err) {
-            alert('Login failed: ' + (err.response?.data || err.message));
+            console.error("Login Error:", err);
+            const errorMessage = err.response?.data || "Login failed. Please check your credentials.";
+            alert(typeof errorMessage === 'string' ? errorMessage : "Invalid Credentials");
         }
     };
 

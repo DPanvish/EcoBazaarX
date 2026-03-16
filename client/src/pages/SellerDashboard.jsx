@@ -138,9 +138,11 @@ const SellerDashboard = () => {
                                 <label className="text-xs font-bold text-emerald-400 uppercase mb-2 flex items-center gap-1"><Leaf size={14} /> Environmental Impact</label>
                                 <input name="co2Emission" type="number" step="0.1" placeholder="CO2 Emission (kg)" value={formData.co2Emission} onChange={handleChange} required className="w-full bg-slate-950/50 border border-emerald-900/50 rounded-lg px-4 py-2.5 mb-4 focus:border-emerald-500" />
                                 <label className="flex items-center gap-3 cursor-pointer">
-                                    <input type="checkbox" name="isEcoFriendly" checked={formData.isEcoFriendly} onChange={handleChange} className="sr-only peer" />
-                                    <div className="w-10 h-6 bg-slate-800 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
-                                    <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                                    <div className="relative w-10 h-6">
+                                        <input type="checkbox" name="isEcoFriendly" checked={formData.isEcoFriendly} onChange={handleChange} className="sr-only peer" />
+                                        <div className="w-full h-full bg-slate-800 rounded-full peer-checked:bg-emerald-500 transition-colors"></div>
+                                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                                    </div>
                                     <span className="text-sm text-slate-300">Submit for Eco-Verification</span>
                                 </label>
                             </div>

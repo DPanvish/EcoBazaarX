@@ -27,41 +27,32 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // 1. Explicitly enable CORS using our Customizer
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            
-            // 2. Disable CSRF (essential for JWT stateless APIs)
             .csrf(csrf -> csrf.disable()) 
-            
-            // 3. Set session to STATELESS (no JSESSIONID cookies)
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             
-            // 4. Configure route authorizations
             .authorizeHttpRequests(auth -> auth
-                // VERY IMPORTANT: Completely ignore OPTIONS requests to allow CORS pre-flight
+                // Completely public routes
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                
-                // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
-
-                // Seller & Admin Endpoints (Both can manage products)
-                .requestMatchers(HttpMethod.POST, "/api/products/add").hasAnyRole("ADMIN", "SELLER")
-                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyRole("ADMIN", "SELLER")
-                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyRole("ADMIN", "SELLER")
                 
-                // Seller exclusive endpoints
-                .requestMatchers(HttpMethod.GET, "/api/products/seller").hasRole("SELLER")
-
-                // Admin exclusive endpoints
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/analytics/admin/**").hasRole("ADMIN")
+                // Shared Admin & Seller Inventory Routes (Use hasAnyAuthority!)
+                .requestMatchers(HttpMethod.POST, "/api/products/add").hasAnyAuthority("ROLE_ADMIN", "ROLE_SELLER")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SELLER")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SELLER")
                 
-                // Everything else (like /api/cart) must have a valid JWT
+                // Seller Exclusive Routes
+                .requestMatchers(HttpMethod.GET, "/api/products/seller").hasAuthority("ROLE_SELLER")
+                
+                // Admin Exclusive Routes (Exact string match for ROLE_ADMIN)
+                .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
+                .requestMatchers("/api/analytics/admin/**").hasAuthority("ROLE_ADMIN")
+                
+                // Catch-all for basic users (like /api/cart or /api/orders)
                 .anyRequest().authenticated()
             )
             
-            // 5. Add the JWT filter BEFORE the standard authentication filter
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -70,28 +61,13 @@ public class SecurityConfig {
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        
-        // Exact frontend origins
         config.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000"));
-        
-        // Explicitly allow methods
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        
-        // Explicitly allow headers (Authorization is required for JWT)
-        config.setAllowedHeaders(Arrays.asList(
-            "Authorization", 
-            "Content-Type", 
-            "Accept", 
-            "Origin", 
-            "Access-Control-Request-Method", 
-            "Access-Control-Request-Headers"
-        ));
-        
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         config.setExposedHeaders(Collections.singletonList("Authorization"));
-        config.setAllowCredentials(true); // Needed if sending auth headers across domains
+        config.setAllowCredentials(true); 
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Apply this configuration to ALL endpoints
         source.registerCorsConfiguration("/**", config); 
         return source;
     }
