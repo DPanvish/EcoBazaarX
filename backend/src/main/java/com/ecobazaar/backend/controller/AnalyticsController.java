@@ -67,6 +67,30 @@ public class AnalyticsController {
         return ResponseEntity.ok(summary);
     }
 
+    @GetMapping("/admin/report/download")
+    public ResponseEntity<byte[]> downloadPlatformReport() {
+        Double revenue = orderRepository.getTotalPlatformRevenue();
+        Double co2 = orderRepository.getTotalPlatformCo2Saved();
+        long orders = orderRepository.count();
+        long users = userRepository.count();
+
+        try {
+            byte[] pdfBytes = pdfReportService.generatePlatformEcoReport(
+                revenue != null ? revenue : 0.0, 
+                co2 != null ? co2 : 0.0, 
+                orders, 
+                users
+            );
+
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=EcoBazaar_Platform_Report.pdf")
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, "application/pdf")
+                    .body(pdfBytes);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/admin/top-products")
     public ResponseEntity<List<TopProductDTO>> getTopEcoProducts() {
         return ResponseEntity.ok(orderItemRepository.getTopEcoProducts());

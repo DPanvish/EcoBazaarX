@@ -45,6 +45,13 @@ public class ProductService {
         }).orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
+    public Product updateVerificationStatus(Long id, String status) {
+        return productRepository.findById(id).map(product -> {
+            product.setVerificationStatus(status);
+            return productRepository.save(product);
+        }).orElseThrow(() -> new RuntimeException("Product not found"));
+    }
+
     public void deleteProduct(Long id) {
         productRepository.deleteById(id);
     }

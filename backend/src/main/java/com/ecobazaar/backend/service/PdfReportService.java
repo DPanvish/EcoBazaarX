@@ -117,4 +117,39 @@ public class PdfReportService {
         document.close();
         return out.toByteArray();
     }
+
+    public byte[] generatePlatformEcoReport(Double totalRevenue, Double totalCo2, long totalOrders, long totalUsers) throws DocumentException {
+        Document document = new Document(PageSize.A4);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PdfWriter.getInstance(document, out);
+
+        document.open();
+
+        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, new Color(16, 185, 129));
+        Paragraph title = new Paragraph("EcoBazaarX - Platform Sustainability Report", titleFont);
+        title.setAlignment(Paragraph.ALIGN_CENTER);
+        title.setSpacingAfter(30);
+        document.add(title);
+
+        PdfPTable table = new PdfPTable(2);
+        table.setWidthPercentage(100);
+        table.setSpacingBefore(20);
+
+        // Add Data Cells
+        table.addCell(new PdfPCell(new Phrase("Total Platform Revenue", FontFactory.getFont(FontFactory.HELVETICA_BOLD))));
+        table.addCell(new PdfPCell(new Phrase("$" + String.format("%.2f", totalRevenue))));
+
+        table.addCell(new PdfPCell(new Phrase("Total Carbon Prevented", FontFactory.getFont(FontFactory.HELVETICA_BOLD))));
+        table.addCell(new PdfPCell(new Phrase(String.format("%.1f", totalCo2) + " kg CO2")));
+
+        table.addCell(new PdfPCell(new Phrase("Total Orders Processed", FontFactory.getFont(FontFactory.HELVETICA_BOLD))));
+        table.addCell(new PdfPCell(new Phrase(String.valueOf(totalOrders))));
+
+        table.addCell(new PdfPCell(new Phrase("Registered Users & Sellers", FontFactory.getFont(FontFactory.HELVETICA_BOLD))));
+        table.addCell(new PdfPCell(new Phrase(String.valueOf(totalUsers))));
+
+        document.add(table);
+        document.close();
+        return out.toByteArray();
+    }
 }

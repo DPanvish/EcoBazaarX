@@ -46,4 +46,9 @@ public class ProductController {
     public void deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
     }
+
+    @PutMapping("/{id}/verify")
+    public Product verifyProduct(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        return productService.updateVerificationStatus(id, body.get("status"));
+    }
 }

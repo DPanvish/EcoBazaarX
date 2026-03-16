@@ -59,7 +59,9 @@ public class Product {
     @Column(name = "is_eco_friendly")
     private boolean isEcoFriendly; 
 
-    // Suggest a better product if this one has a high footprint
     @Column(name = "alternative_product_id")
     private Long alternativeProductId; 
+
+    @Column(name = "verification_status")
+    private String verificationStatus = "PENDING";
 }
