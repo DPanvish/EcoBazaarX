@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Lock, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -8,7 +7,7 @@ import axiosInstance from '../lib/axios';
 const ResetPassword = () => {
     const [searchParams] = useSearchParams();
     const token = searchParams.get('token'); // Get token from URL
-    
+
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
 
@@ -33,7 +32,7 @@ const ResetPassword = () => {
                 <form onSubmit={handleReset} className="space-y-4">
                     <div className="relative">
                         <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                        <input 
+                        <input
                             type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                             className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
                             placeholder="New secure password" required
