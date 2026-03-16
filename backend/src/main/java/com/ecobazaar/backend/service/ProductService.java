@@ -23,7 +23,19 @@ public class ProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
-    public Product addProduct(Product product) {
+    public List<Product> getProductsBySeller(String sellerEmail) {
+        return productRepository.findBySellerEmail(sellerEmail);
+    }
+
+    public Product addProduct(Product product, String sellerEmail) {
+        product.setSellerEmail(sellerEmail);
+
+        if (product.isEcoFriendly()) {
+            product.setVerificationStatus("PENDING");
+        } else {
+            product.setVerificationStatus("APPROVED"); 
+        }
+        
         return productRepository.save(product);
     }
 

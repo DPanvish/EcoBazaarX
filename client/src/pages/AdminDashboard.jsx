@@ -1,31 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { Plus, Trash, Leaf, Package, Activity, AlertCircle, BarChart3, Users, DollarSign, ShoppingBag, Clock, ShieldCheck, XCircle, CheckCircle, Download } from 'lucide-react';
+import { Trash, Leaf, Package, Activity, AlertCircle, BarChart3, Users, DollarSign, ShoppingBag, Clock, ShieldCheck, XCircle, CheckCircle, Download, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import axiosInstance from '../lib/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '../lib/api';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
-    const [imageFiles, setImageFiles] = useState([]); 
-    const [uploading, setUploading] = useState(false);
-    const [formData, setFormData] = useState({
-        name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, imageUrl: '',
-        description: '', brand: '', stockQuantity: '', material: '', certifications: ''
-    });
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
     
-    // Tabs: inventory, analytics, users, verifications
+    // Tabs: inventory, verifications, users, analytics
     const [activeTab, setActiveTab] = useState('inventory'); 
-    
     const [analyticsData, setAnalyticsData] = useState([]);
     const [summaryData, setSummaryData] = useState(null); 
     const [loadingAnalytics, setLoadingAnalytics] = useState(false);
-    
     const [usersList, setUsersList] = useState([]);
-
-    const CATEGORIES = ["Home & Kitchen", "Fashion", "Health & Beauty", "Tech & Gadgets", "Groceries"];
-    const queryClient = useQueryClient();
 
     // Fetch Analytics Data
     useEffect(() => {
@@ -51,14 +42,10 @@ const AdminDashboard = () => {
         }
     }, [activeTab]);
 
+    // Fetch All Platform Products
     const {data: products = [], isLoading: loading} = useQuery({
         queryKey: ['products'],
         queryFn: productApi.getAll
-    });
-
-    const createProductMutation = useMutation({
-        mutationFn: productApi.add,
-        onSuccess: () => queryClient.invalidateQueries(['products'])
     });
 
     const deleteProductMutation = useMutation({
@@ -66,48 +53,16 @@ const AdminDashboard = () => {
         onSuccess: () => queryClient.invalidateQueries(['products'])
     });
 
-    const handleChange = (e) => {
-        const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-        setFormData({ ...formData, [e.target.name]: value });
-    };
-
-    const handleFileChange = (e) => setImageFiles(Array.from(e.target.files));
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setUploading(true);
-        try {
-            const uploadedUrls = [];
-            if (imageFiles.length > 0) {
-                for (const file of imageFiles) {
-                    const cloudData = new FormData();
-                    cloudData.append("file", file);
-                    cloudData.append("upload_preset", `${import.meta.env.VITE_CLOUDINARY_PRESET_NAME}`); 
-                    const cloudRes = await axios.post(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`, cloudData);
-                    uploadedUrls.push(cloudRes.data.secure_url);
-                }
-            }
-            createProductMutation.mutate({ ...formData, imageUrls: uploadedUrls });
-            setFormData({ name: '', price: '', category: '', co2Emission: '', isEcoFriendly: false, description: '', brand: '', stockQuantity: '', material: '', certifications: '' });
-            setImageFiles([]);
-            document.getElementById('fileInput').value = "";
-            setUploading(false);
-        } catch (err) {
-            console.error(err);
-            alert('Error publishing product.');
-            setUploading(false);
-        }
-    };
-
     const handleDelete = async (id) => {
-        if(window.confirm("Delete this product?")) deleteProductMutation.mutate(id);
+        if(window.confirm("Delete this product from the platform? This cannot be undone.")) {
+            deleteProductMutation.mutate(id);
+        }
     };
 
     const handleVerifyProduct = async (id, status) => {
         try {
             await axiosInstance.put(`/products/${id}/verify`, { status });
             queryClient.invalidateQueries(['products']);
-            alert(`Product ${status}`);
         } catch (err) {
             console.error("Verification failed", err);
         }
@@ -128,106 +83,68 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
+
     // Filter products requiring verification
     const pendingProducts = products.filter(p => p.isEcoFriendly && (!p.verificationStatus || p.verificationStatus === 'PENDING'));
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-200 relative overflow-hidden font-sans pb-12">
-            <div className="fixed top-[-10%] left-[-5%] w-96 h-96 bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="fixed bottom-[-10%] right-[-5%] w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-
+            <div className="fixed top-[-10%] left-[-5%] w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+            
             <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-white/10 px-8 py-4 flex flex-col md:flex-row justify-between items-center shadow-lg gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-br from-emerald-400 to-green-600 rounded-lg shadow-lg shadow-green-500/20">
-                        <Activity className="text-white w-6 h-6" />
+                    <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg shadow-lg shadow-purple-500/20">
+                        <ShieldCheck className="text-white w-6 h-6" />
                     </div>
                     <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                        Command Center
+                        Admin Command Center
                     </h1>
                 </div>
 
                 <div className="flex flex-wrap bg-slate-800/50 p-1 rounded-xl border border-white/5">
-                    <button onClick={() => setActiveTab('inventory')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'inventory' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
-                        <Package size={16} /> Inventory
+                    <button onClick={() => setActiveTab('inventory')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'inventory' ? 'bg-purple-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
+                        <Package size={16} /> All Inventory
                     </button>
-                    <button onClick={() => setActiveTab('verifications')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'verifications' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
+                    <button onClick={() => setActiveTab('verifications')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'verifications' ? 'bg-purple-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
                         <ShieldCheck size={16} /> Verifications
                         {pendingProducts.length > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{pendingProducts.length}</span>}
                     </button>
-                    <button onClick={() => setActiveTab('users')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
+                    <button onClick={() => setActiveTab('users')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-purple-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
                         <Users size={16} /> Users
                     </button>
-                    <button onClick={() => setActiveTab('analytics')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'analytics' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
+                    <button onClick={() => setActiveTab('analytics')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'analytics' ? 'bg-purple-500 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
                         <BarChart3 size={16} /> Analytics
                     </button>
                 </div>
+
+                <button onClick={handleLogout} className="flex items-center gap-2 text-red-400 hover:text-red-300 font-bold transition-all">
+                    <LogOut size={18} /> Logout
+                </button>
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10">
                 
-                {/* INVENTORY VIEW */}
+                {/* --- TAB 1: FULL PLATFORM INVENTORY --- */}
                 {activeTab === 'inventory' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        {/* LEFT COLUMN: The Form */}
-                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-4 h-fit">
-                            <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-400" />
-                                <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2"><Plus className="text-emerald-400" /> Add to Inventory</h2>
-
-                                <form onSubmit={handleSubmit} className="space-y-5">
-                                    <div className="space-y-4">
-                                        <input name="name" placeholder="Product Title" value={formData.name} onChange={handleChange} required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 focus:border-emerald-500" />
-                                        <textarea name="description" placeholder="Detailed Product Description..." value={formData.description} onChange={handleChange} rows="3" required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 focus:border-emerald-500 resize-none"></textarea>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <input name="price" type="number" step="0.01" placeholder="Price ($)" value={formData.price} onChange={handleChange} required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 focus:border-emerald-500" />
-                                            <input name="stockQuantity" type="number" placeholder="Stock Quantity" value={formData.stockQuantity} onChange={handleChange} required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 focus:border-emerald-500" />
-                                        </div>
-                                        <div className="grid grid-cols-1 gap-4">
-                                            <input name="brand" placeholder="Brand Name" value={formData.brand} onChange={handleChange} required className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 focus:border-emerald-500" />
-                                        </div>
-                                        <div className="bg-slate-950/30 border border-slate-800/50 p-4 rounded-xl mt-2">
-                                            <label className="block text-xs font-bold text-slate-400 uppercase mb-3 ml-1">Select Category</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {CATEGORIES.map(cat => (
-                                                    <button key={cat} type="button" onClick={() => setFormData({ ...formData, category: cat })} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${formData.category === cat ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : 'bg-slate-900 border border-slate-700 text-slate-400'}`}>{cat}</button>
-                                                ))}
-                                            </div>
-                                            <input type="text" name="category" value={formData.category} readOnly required className="h-0 w-0 opacity-0 absolute" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <input name="material" placeholder="Material" value={formData.material} onChange={handleChange} className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 focus:border-emerald-500" />
-                                            <input name="certifications" placeholder="Certifications" value={formData.certifications} onChange={handleChange} className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 focus:border-emerald-500" />
-                                        </div>
-                                        <div className="relative bg-slate-950/50 border border-slate-800 border-dashed rounded-xl px-4 py-4 mt-2">
-                                            <label className="flex flex-col items-center justify-center cursor-pointer w-full h-full">
-                                                <input id="fileInput" type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
-                                                <span className="text-sm text-slate-400 mb-2">{imageFiles.length > 0 ? `${imageFiles.length} files selected` : "Upload images"}</span>
-                                                <div className="bg-slate-800 px-4 py-1.5 rounded-md text-xs font-semibold text-white">Browse</div>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-emerald-950/30 border border-emerald-900/50 rounded-xl p-4 mt-2">
-                                        <label className="text-xs font-bold text-emerald-400 uppercase mb-2 flex items-center gap-1"><Leaf size={14} /> Environmental Impact</label>
-                                        <input name="co2Emission" type="number" step="0.1" placeholder="CO2 Emission (kg)" value={formData.co2Emission} onChange={handleChange} required className="w-full bg-slate-950/50 border border-emerald-900/50 rounded-lg px-4 py-2.5 mb-4 focus:border-emerald-500" />
-                                        <label className="flex items-center gap-3 cursor-pointer">
-                                            <input type="checkbox" name="isEcoFriendly" checked={formData.isEcoFriendly} onChange={handleChange} className="sr-only peer" />
-                                            <div className="w-10 h-6 bg-slate-800 rounded-full peer peer-checked:bg-emerald-500 transition-colors"></div>
-                                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
-                                            <span className="text-sm text-slate-300">Submit for Eco-Verification</span>
-                                        </label>
-                                    </div>
-
-                                    <button type="submit" className="w-full bg-slate-950 border border-emerald-500 px-4 py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all font-bold text-white">
-                                        {uploading ? "Publishing..." : "Publish Product"} <Plus className="w-5 h-5" />
-                                    </button>
-                                </form>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                        <div className="flex justify-between items-end mb-6">
+                            <div>
+                                <h2 className="text-2xl font-bold text-white mb-1">Global Inventory</h2>
+                                <p className="text-slate-400 text-sm">View and manage all products submitted by sellers.</p>
                             </div>
-                        </motion.div>
+                        </div>
 
-                        {/* RIGHT COLUMN: The Grid */}
-                        <div className="lg:col-span-8">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {loading ? <div className="text-purple-400 animate-pulse font-bold">Loading Platform Data...</div> : products.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-2xl py-20">
+                                <AlertCircle className="w-12 h-12 mb-4 opacity-50" />
+                                <p>No products exist on the platform yet.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                                 <AnimatePresence>
                                     {products.map((product) => (
                                         <motion.div key={product.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-slate-900/40 border border-white/5 rounded-2xl overflow-hidden shadow-lg relative flex flex-col">
@@ -237,10 +154,10 @@ const AdminDashboard = () => {
                                                 
                                                 {/* Verification Status Badge */}
                                                 {product.isEcoFriendly && product.verificationStatus === 'APPROVED' && (
-                                                    <div className="absolute top-3 left-3 bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><CheckCircle size={12} /> Verified</div>
+                                                    <div className="absolute top-3 left-3 bg-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><CheckCircle size={12} /> Verified</div>
                                                 )}
                                                 {product.isEcoFriendly && (!product.verificationStatus || product.verificationStatus === 'PENDING') && (
-                                                    <div className="absolute top-3 left-3 bg-orange-500/90 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><AlertCircle size={12} /> Pending</div>
+                                                    <div className="absolute top-3 left-3 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><AlertCircle size={12} /> Pending</div>
                                                 )}
                                             </div>
                                             <div className="p-4 flex flex-col justify-between grow">
@@ -248,17 +165,20 @@ const AdminDashboard = () => {
                                                     <h3 className="font-bold text-lg text-white truncate">{product.name}</h3>
                                                     <span className="font-mono font-semibold text-emerald-400">${product.price}</span>
                                                 </div>
-                                                <div className="mt-2 text-sm text-slate-400 font-mono">{product.co2Emission} kg CO₂</div>
+                                                <div className="mt-2 text-xs text-slate-400 flex justify-between">
+                                                    <span className="font-mono">{product.co2Emission} kg CO₂</span>
+                                                    <span className="bg-slate-800 px-2 py-0.5 rounded text-slate-300">Seller: {product.sellerEmail || 'Unknown'}</span>
+                                                </div>
                                             </div>
                                         </motion.div>
                                     ))}
                                 </AnimatePresence>
                             </div>
-                        </div>
-                    </div>
+                        )}
+                    </motion.div>
                 )}
 
-                {/* VERIFICATIONS VIEW (WORKFLOW) */}
+                {/* --- TAB 2: VERIFICATIONS VIEW (WORKFLOW) --- */}
                 {activeTab === 'verifications' && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                         <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
@@ -273,15 +193,15 @@ const AdminDashboard = () => {
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {pendingProducts.map(product => (
-                                        <div key={product.id} className="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg">
+                                        <div key={product.id} className="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg flex flex-col h-full">
                                             <div className="flex gap-4 mb-4">
                                                 <img src={product.imageUrls[0]} alt={product.name} className="w-16 h-16 rounded-xl object-cover" />
                                                 <div>
                                                     <h3 className="font-bold text-white leading-tight">{product.name}</h3>
-                                                    <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider">{product.brand}</p>
+                                                    <p className="text-xs text-slate-400 mt-1 uppercase tracking-wider">{product.sellerEmail}</p>
                                                 </div>
                                             </div>
-                                            <div className="bg-slate-950 p-3 rounded-xl mb-4 space-y-2 text-sm">
+                                            <div className="bg-slate-950 p-3 rounded-xl mb-4 space-y-2 text-sm grow">
                                                 <div className="flex justify-between"><span className="text-slate-500">Claimed CO₂:</span> <span className="text-emerald-400 font-mono">{product.co2Emission} kg</span></div>
                                                 <div className="flex justify-between"><span className="text-slate-500">Material:</span> <span className="text-slate-300">{product.material || 'N/A'}</span></div>
                                                 <div className="flex justify-between"><span className="text-slate-500">Certs:</span> <span className="text-slate-300">{product.certifications || 'None provided'}</span></div>
@@ -327,7 +247,11 @@ const AdminDashboard = () => {
                                                 <td className="p-4 text-white font-medium">{user.fullName}</td>
                                                 <td className="p-4 text-slate-300 text-sm">{user.email}</td>
                                                 <td className="p-4">
-                                                    <span className={`text-xs px-2 py-1 rounded-md font-bold ${user.role === 'ROLE_ADMIN' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                                    <span className={`text-xs px-2 py-1 rounded-md font-bold ${
+                                                        user.role === 'ROLE_ADMIN' ? 'bg-purple-500/20 text-purple-400' : 
+                                                        user.role === 'ROLE_SELLER' ? 'bg-blue-500/20 text-blue-400' : 
+                                                        'bg-emerald-500/20 text-emerald-400'
+                                                    }`}>
                                                         {user.role}
                                                     </span>
                                                 </td>
@@ -353,21 +277,19 @@ const AdminDashboard = () => {
                 {activeTab === 'analytics' && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
                         {loadingAnalytics || !summaryData ? (
-                            <div className="h-96 flex items-center justify-center text-emerald-500 font-bold animate-pulse">Loading Platform Data...</div>
+                            <div className="h-96 flex items-center justify-center text-purple-500 font-bold animate-pulse">Loading Platform Data...</div>
                         ) : (
                             <>
-                                {/* HEADER WITH DOWNLOAD BUTTON */}
                                 <div className="flex justify-between items-end">
                                     <div>
                                         <h2 className="text-2xl font-bold text-white mb-1">Sustainability Reports</h2>
                                         <p className="text-slate-400 text-sm">System-wide metrics and performance.</p>
                                     </div>
-                                    <button onClick={handleDownloadPlatformReport} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-emerald-900/50 flex items-center gap-2 transition-all transform hover:scale-105">
+                                    <button onClick={handleDownloadPlatformReport} className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-lg shadow-purple-900/50 flex items-center gap-2 transition-all transform hover:scale-105">
                                         <Download size={18} /> Export System PDF
                                     </button>
                                 </div>
 
-                                {/* KPI CARDS */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                     <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl flex items-center gap-4">
                                         <div className="p-4 bg-blue-500/20 text-blue-400 rounded-2xl"><DollarSign size={28} /></div>
@@ -384,7 +306,7 @@ const AdminDashboard = () => {
                                         </div>
                                     </div>
                                     <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl flex items-center gap-4">
-                                        <div className="p-4 bg-purple-500/20 text-purple-400 rounded-2xl"><ShoppingBag size={28} /></div>
+                                        <div className="p-4 bg-indigo-500/20 text-indigo-400 rounded-2xl"><ShoppingBag size={28} /></div>
                                         <div>
                                             <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Total Orders</p>
                                             <h3 className="text-2xl font-black text-white">{summaryData.totalOrders}</h3>
@@ -393,14 +315,13 @@ const AdminDashboard = () => {
                                     <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-xl flex items-center gap-4">
                                         <div className="p-4 bg-orange-500/20 text-orange-400 rounded-2xl"><Users size={28} /></div>
                                         <div>
-                                            <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Registered Users</p>
+                                            <p className="text-slate-400 text-sm font-bold uppercase tracking-wider">Total Accounts</p>
                                             <h3 className="text-2xl font-black text-white">{summaryData.totalUsers}</h3>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                    {/* BAR CHART */}
                                     <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
                                         <div className="mb-6">
                                             <h2 className="text-xl font-bold text-white">Top Eco-Products</h2>
@@ -426,7 +347,6 @@ const AdminDashboard = () => {
                                         )}
                                     </div>
 
-                                    {/* RECENT ORDERS TABLE */}
                                     <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
                                         <div className="mb-6 flex justify-between items-center">
                                             <div>

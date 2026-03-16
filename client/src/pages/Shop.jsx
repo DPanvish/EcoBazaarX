@@ -31,6 +31,12 @@ const Shop = () => {
     });
 
     const filteredProducts = products.filter(product => {
+        // If a product claims to be eco-friendly, it MUST be APPROVED by admin to be shown in the shop.
+        // Standard products (isEcoFriendly = false) are shown automatically.
+        const isVerified = !product.isEcoFriendly || product.verificationStatus === 'APPROVED';
+        
+        if (!isVerified) return false; 
+
         const safeName = product.name || "";
         const safeCategory = product.category || "";
         const search = searchTerm.toLowerCase();

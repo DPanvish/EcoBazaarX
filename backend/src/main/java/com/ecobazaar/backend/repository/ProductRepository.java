@@ -1,8 +1,11 @@
 package com.ecobazaar.backend.repository;
 
-import com.ecobazaar.backend.model.Product;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.ecobazaar.backend.model.Product;
+
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    // We will add custom search queries here later (e.g., findByCategory)
+    List<Product> findBySellerEmail(String sellerEmail);
 }

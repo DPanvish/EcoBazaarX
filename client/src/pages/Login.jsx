@@ -30,8 +30,13 @@ const Login = () => {
             }
 
             // Store role/user data here later
-            if(res.data.role === 'ROLE_ADMIN') navigate('/admin');
-            else navigate('/shop');
+            if(res.data.role === 'ROLE_ADMIN') {
+                navigate('/admin');
+            } else if (res.data.role === 'ROLE_SELLER') {
+                navigate('/seller'); 
+            } else {
+                navigate('/shop');
+            }
         } catch (err) {
             alert('Login failed: ' + (err.response?.data || err.message));
         }

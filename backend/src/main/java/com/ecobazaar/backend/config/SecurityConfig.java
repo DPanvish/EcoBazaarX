@@ -44,11 +44,18 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
+
+                // Seller & Admin Endpoints (Both can manage products)
+                .requestMatchers(HttpMethod.POST, "/api/products/add").hasAnyRole("ADMIN", "SELLER")
+                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasAnyRole("ADMIN", "SELLER")
+                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasAnyRole("ADMIN", "SELLER")
                 
-                // Admin endpoints
-                .requestMatchers(HttpMethod.POST, "/api/products/add").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
+                // Seller exclusive endpoints
+                .requestMatchers(HttpMethod.GET, "/api/products/seller").hasRole("SELLER")
+
+                // Admin exclusive endpoints
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/analytics/admin/**").hasRole("ADMIN")
                 
                 // Everything else (like /api/cart) must have a valid JWT
                 .anyRequest().authenticated()

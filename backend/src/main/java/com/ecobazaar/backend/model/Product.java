@@ -53,6 +53,9 @@ public class Product {
     
     private String category;
     
+    @Column(name = "seller_email")
+    private String sellerEmail;
+
     @Column(name = "co2_emission_kg", nullable = false)
     private Double co2Emission; 
 

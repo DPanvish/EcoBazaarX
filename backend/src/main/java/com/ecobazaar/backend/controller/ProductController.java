@@ -3,6 +3,7 @@ package com.ecobazaar.backend.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,9 +33,16 @@ public class ProductController {
         return productService.getProductById(id);
     }
 
+    @GetMapping("/seller")
+    public List<Product> getSellerProducts() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return productService.getProductsBySeller(email);
+    }
+
     @PostMapping("/add")
     public Product addProduct(@RequestBody Product product) {
-        return productService.addProduct(product);
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return productService.addProduct(product, email);
     }
 
     @PutMapping("/{id}")

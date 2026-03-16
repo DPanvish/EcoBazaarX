@@ -119,7 +119,7 @@ const Signup = () => {
                                 className="w-full bg-slate-800/50 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none cursor-pointer transition-all"
                             >
                                 <option value="ROLE_USER">Customer (Shop for Eco-Products)</option>
-                                <option value="ROLE_ADMIN">Admin (Manage Inventory)</option>
+                                <option value="ROLE_SELLER">Seller (Sell Eco-Products)</option>
                             </select>
                             
                             {/* Custom Arrow for Dropdown */}
