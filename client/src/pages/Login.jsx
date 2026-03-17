@@ -11,14 +11,30 @@ const Login = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        
+        const loginPayload = {
+            email: email,
+            password: password
+        };
+        
         try {
-            await axiosInstance.post("/auth/login", {
-                email, password
-            });
-            alert(`Welcome back!`);
-            navigate('/shop');
+            const res = await axiosInstance.post('/auth/login', loginPayload);
+            
+            localStorage.setItem('token', res.data.token);
+            
+            const userRole = res.data.role;
+            if (userRole === 'ROLE_ADMIN') {
+                navigate('/admin');
+            } else if (userRole === 'ROLE_SELLER') {
+                navigate('/seller');
+            } else {
+                navigate('/shop');
+            }
+            
         } catch (err) {
-            alert('Login failed: ' + (err.response?.data || err.message));
+            console.error("Login Error:", err);
+            const errorMessage = err.response?.data || "Login failed. Please check your credentials.";
+            alert(typeof errorMessage === 'string' ? errorMessage : "Invalid Credentials");
         }
     };
 

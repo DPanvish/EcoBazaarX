@@ -1,9 +1,11 @@
 package com.ecobazaar.backend.service;
 
-import com.ecobazaar.backend.model.*;
-import com.ecobazaar.backend.repository.CarbonFootprintRepository;
-import com.ecobazaar.backend.repository.OrderRepository;
-import com.ecobazaar.backend.repository.UserRepository;
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +13,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.ecobazaar.backend.model.CarbonFootprint;
+import com.ecobazaar.backend.model.Order;
+import com.ecobazaar.backend.model.OrderItem;
+import com.ecobazaar.backend.model.User;
+import com.ecobazaar.backend.repository.CarbonFootprintRepository;
+import com.ecobazaar.backend.repository.OrderRepository;
+import com.ecobazaar.backend.repository.UserRepository;
 
 @Service
 public class OrderService {
@@ -42,6 +46,9 @@ public class OrderService {
         Double totalAmount = Double.valueOf(orderRequest.get("totalAmount").toString());
         Double totalCo2 = Double.valueOf(orderRequest.get("totalCo2").toString());
 
+        String shippingAddress = orderRequest.containsKey("shippingAddress") ? 
+                                 orderRequest.get("shippingAddress").toString() : "No Address Provided";
+
         List<Map<String, Object>> cartItems = (List<Map<String, Object>>) orderRequest.get("items");
         List<OrderItem> orderItems = cartItems.stream().map(item -> {
             return OrderItem.builder()
@@ -56,14 +63,15 @@ public class OrderService {
                 .userEmail(userEmail)
                 .totalAmount(totalAmount)
                 .totalCo2Saved(totalCo2)
+                .shippingAddress(shippingAddress) 
                 .orderDate(LocalDateTime.now())
                 .status("COMPLETED")
                 .items(orderItems)
                 .build();
 
-        for (OrderItem item : orderItems) {
-            item.setOrder(newOrder);
-        }
+        // for (OrderItem item : orderItems) {
+        //     item.setOrder(newOrder);
+        // }
 
         Order savedOrder = orderRepository.save(newOrder);
         logger.info("Saved order: {}", savedOrder);

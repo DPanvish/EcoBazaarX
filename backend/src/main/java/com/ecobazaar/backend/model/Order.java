@@ -1,20 +1,14 @@
 package com.ecobazaar.backend.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
+import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "orders")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -30,7 +24,11 @@ public class Order {
     private Double totalCo2Saved; 
     private LocalDateTime orderDate;
     private String status;
+    
+    @Column(length = 500) 
+    private String shippingAddress; 
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "order_id")
     private List<OrderItem> items = new ArrayList<>();
 }

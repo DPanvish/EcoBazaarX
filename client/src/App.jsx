@@ -9,7 +9,8 @@ import Shop from "./pages/Shop";
 import ProductDetails from "./pages/ProductDetails";
 import { CartProvider } from "./context/CartContext";
 import Checkout from "./pages/Checkout";
-import CarbonDashboard from "./pages/CarbonDashboard";
+import MyOrders from "./pages/MyOrders";
+import SellerDashboard from "./pages/SellerDashboard";
 
 const App = () => {
   return (
@@ -26,7 +27,9 @@ const App = () => {
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/carbon-dashboard" element={<CarbonDashboard />} />
+          <Route path="/dashboard" element={<UserDashboard />} />
+          <Route path="/seller" element={<SellerDashboard />} />
+          <Route path="/my-orders" element={<MyOrders />} />
         </Routes>
       </Router>
     </CartProvider>

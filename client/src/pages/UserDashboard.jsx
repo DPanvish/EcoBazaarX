@@ -1,145 +1,159 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Leaf, Award } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import EcoBadges from '../components/EcoBadges';
-import axiosInstance from '../lib/axios';
-import { useQuery } from '@tanstack/react-query';
-import { carbonApi, achievementApi, productApi, user } from '../lib/api';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useNavigate } from 'react-router-dom'; 
+import { ArrowLeft, Download } from 'lucide-react';
+import axiosInstance from "../lib/axios"
 
 const UserDashboard = () => {
-    const [userId, setUserId] = useState(null);
     const navigate = useNavigate();
 
+    const [dashboardData, setDashboardData] = useState({
+        monthlyTrend: [],
+        lifetimeSavings: 0,
+        badges: []
+    });
+
+    const [loading, setLoading] = useState(true);
+
     useEffect(() => {
-        const currentUser = user.getCurrentUser();
-        if (currentUser) {
-            setUserId(currentUser.id);
-        } else {
-            navigate('/login');
-        }
-    }, [navigate]);
+        const fetchAnalytics = async () => {
+            try {
+                const res = await axiosInstance.get('/analytics/user/dashboard');
 
-    const { data: carbonData = [] } = useQuery({
-        queryKey: ['carbonFootprint', userId],
-        queryFn: () => carbonApi.getForUser(userId),
-        enabled: !!userId,
-    });
+                let trend = res.data.monthlyTrend || [];
 
-    const { data: achievements = [] } = useQuery({
-        queryKey: ['achievements', userId],
-        queryFn: () => achievementApi.getForUser(userId),
-        enabled: !!userId,
-    });
+                if (trend.length === 1) {
+                    trend = [
+                        { month: 'Start', co2Saved: 0 },
+                        ...trend
+                    ];
+                }
 
-    const { data: products = [] } = useQuery({
-        queryKey: ['products'],
-        queryFn: productApi.getAll,
-    });
+                setDashboardData({
+                    ...res.data,
+                    monthlyTrend: trend
+                });
+            } catch (err) {
+                console.error("Failed to load analytics", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchAnalytics();
+    }, []);
 
-    const topEcoProducts = products.filter(p => p.isEcoFriendly).slice(0, 3);
-
-    const handleDownloadReport = () => {
-        if (!carbonData || carbonData.length === 0) {
-            alert('No carbon data available to generate a report.');
-            return;
-        }
-        const productId = carbonData[0].productId;
-        axiosInstance.get(`/carbon/product/${productId}/report`, { responseType: 'blob' })
-            .then(response => {
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', 'eco-report.pdf');
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-            })
-            .catch(error => {
-                console.error('Error downloading report:', error);
+    const handleDownloadReport = async () => {
+        try {
+            // We MUST specify responseType 'blob' to handle binary file data securely with Axios
+            const res = await axiosInstance.get('/analytics/user/report/download', {
+                responseType: 'blob' 
             });
+            
+            // Create a temporary URL to trigger the browser's download behavior
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'My_Eco_Impact_Report.pdf');
+            document.body.appendChild(link);
+            link.click();
+            
+            // Cleanup
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            
+        } catch (err) {
+            console.error("Failed to download report", err);
+            alert("Failed to generate report. Please try again.");
+        }
     };
 
+    if (loading) return <div className="text-center mt-20 text-green-600 font-bold">Loading your impact...</div>;
+
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-200 font-sans pb-12">
-            {/* Ambient Glowing Backgrounds */}
-            <div className="fixed top-[-10%] left-[-5%] w-96 h-96 bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="fixed bottom-[-10%] right-[-5%] w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="max-w-6xl mx-auto p-6 space-y-8 mt-10">
+            <button 
+                onClick={() => navigate('/shop')} 
+                className="flex items-center gap-2 text-slate-500 hover:text-green-500 font-bold transition-colors mb-4"
+            >
+                <ArrowLeft size={20} /> Back to Shop
+            </button>
 
-            {/* Header */}
-            <header className="sticky top-0 z-50 bg-slate-900/50 backdrop-blur-md border-b border-white/10 px-8 py-4 flex justify-between items-center shadow-lg">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-linear-to-br from-emerald-400 to-green-600 rounded-lg shadow-lg shadow-green-500/20">
-                        <BarChart className="text-white w-6 h-6" />
-                    </div>
-                    <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-white to-slate-400">
-                        Your Eco Dashboard
-                    </h1>
-                </div>
-                <Link to="/carbon-dashboard" className="text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors">
-                    Carbon Insights
-                </Link>
-            </header>
-
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 relative z-10">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Carbon Footprint Summary */}
-                    <div className="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                            <Leaf className="text-emerald-400" />
-                            Monthly Carbon Footprint
-                        </h2>
-                        <div className="h-64">
-                            {carbonData && carbonData.length > 0 ? (
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={carbonData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                                        <XAxis dataKey="calculationDate" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151' }} />
-                                        <Legend wrapperStyle={{ fontSize: '14px' }} />
-                                        <Line type="monotone" dataKey="carbonFootprint" stroke="#10b981" name="Carbon Footprint (kg)" />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            ) : (
-                                <div className="flex items-center justify-center h-full text-slate-500">
-                                    <p>No carbon data yet. Purchase a product to see your footprint.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Achievements */}
-                    <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                            <Award className="text-yellow-400" />
-                            Achievements
-                        </h2>
-                        <EcoBadges achievements={achievements} />
+            {/* Header Stats */}
+            <div className="bg-gradient-to-r from-green-500 to-emerald-700 rounded-3xl p-8 text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                    <h1 className="text-3xl font-bold mb-2">Your Environmental Impact</h1>
+                    <p className="text-green-100 text-lg">Every eco-swap makes a difference.</p>
+                    <div className="mt-6">
+                        <span className="text-5xl font-black">{dashboardData.lifetimeSavings.toFixed(2)}</span>
+                        <span className="text-2xl ml-2">kg CO₂ Saved</span>
                     </div>
                 </div>
+                
+                <button 
+                    onClick={handleDownloadReport}
+                    className="bg-white/20 hover:bg-white/30 border border-white/40 backdrop-blur-sm text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all transform hover:scale-105"
+                >
+                    <Download size={20} /> Download PDF Report
+                </button>
+            </div>
 
-                {/* Top Eco-Friendly Products */}
-                <div className="mt-8 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-                    <h2 className="text-xl font-bold text-white mb-4">Top Eco-Friendly Products</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {topEcoProducts.map(product => (
-                            <div key={product.id} className="bg-slate-800/50 p-4 rounded-lg">
-                                <h3 className="font-bold text-lg text-white">{product.name}</h3>
-                                <p className="text-sm text-slate-400">{product.category}</p>
-                                <p className="text-lg font-semibold text-emerald-400 mt-2">${product.price}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Badges Section */}
+                <div className="bg-white p-6 rounded-3xl shadow-lg border border-gray-100">
+                    <h3 className="text-xl font-bold text-gray-800 mb-4">Eco Achievements</h3>
+                    <div className="flex flex-col space-y-3">
+                        {dashboardData.badges.map((badge, index) => (
+                            <div key={index} className="bg-green-50 text-green-800 font-semibold p-4 rounded-xl flex items-center shadow-sm">
+                                <span className="text-2xl mr-3">{badge.split(' ')[0]}</span>
+                                <span>{badge.substring(badge.indexOf(' ') + 1)}</span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Download Report Button */}
-                <div className="mt-8 text-center">
-                    <button onClick={handleDownloadReport} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                        Download Eco-Report
-                    </button>
+                {/* Chart Section */}
+                <div className="md:col-span-2 bg-white p-6 rounded-3xl shadow-lg border border-gray-100 h-96">
+                    <h3 className="text-xl font-bold text-gray-800 mb-6">Monthly Carbon Trend</h3>
+                    <ResponsiveContainer width="100%" height="80%">
+                        <AreaChart data={dashboardData.monthlyTrend}>
+                            <defs>
+                                <linearGradient id="colorCo2" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                            <XAxis 
+                                dataKey="month" 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#9ca3af', fontSize: 12 }} 
+                                dy={10} 
+                            />
+                            <YAxis 
+                                axisLine={false} 
+                                tickLine={false} 
+                                tick={{ fill: '#9ca3af', fontSize: 12 }} 
+                                dx={-10} 
+                            />
+                            <Tooltip 
+                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
+                            />
+                            <Area 
+                                type="monotone" 
+                                dataKey="co2Saved" 
+                                stroke="#10b981" 
+                                strokeWidth={4}
+                                fillOpacity={1} 
+                                fill="url(#colorCo2)"
+                                activeDot={{ r: 6, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} 
+                                name="kg CO₂ Saved"
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
                 </div>
-            </main>
+            </div>
         </div>
     );
 };

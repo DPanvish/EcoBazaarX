@@ -12,12 +12,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "order_items")
+@Table(name = "cart_items")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderItem {
+public class CartItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +29,11 @@ public class OrderItem {
     
     @Column(name = "co2_emission_kg")
     private Double co2Emission;
+
+    private String imageUrl; 
     
     @Column(name = "is_eco_friendly")
-    private Boolean isEcoFriendly; 
+    private Boolean isEcoFriendly;
+    
+    private String category;
 }

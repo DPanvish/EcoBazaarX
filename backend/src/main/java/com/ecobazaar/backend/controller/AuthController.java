@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ecobazaar.backend.model.User;
 import com.ecobazaar.backend.repository.UserRepository;
 import com.ecobazaar.backend.service.EmailService;
+import com.ecobazaar.backend.controller.JwtUtils;
 
 import jakarta.validation.Valid;
 
@@ -28,6 +29,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtUtils jwtUtils;
 
     // --- REGISTER ---
     @PostMapping("/register")
@@ -53,28 +57,55 @@ public class AuthController {
         return ResponseEntity.ok("User registered successfully!");
     }
 
+    // --- LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
+        
+        System.out.println("\n=== INCOMING LOGIN REQUEST ===");
+        
+        // Check what raw data arrived from React
         String email = loginData.get("email");
         String password = loginData.get("password");
+        
+        System.out.println("Received Email:    [" + email + "]");
+        System.out.println("Received Password: [" + password + "]");
 
-        User user = userRepository.findByEmail(email).orElse(null);
-
-        if (user == null) {
-            return ResponseEntity.status(401).body("Invalid Credentials");
+        // Safely find the user
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.status(400).body("Email is missing from request");
         }
 
-        if (passwordEncoder.matches(password, user.getPassword())) {
-            // Reverted to a simple success response without JWT
-            return ResponseEntity.ok(Map.of("message", "Login Successful"));
+        User user = userRepository.findByEmail(email.trim()).orElse(null);
+        
+        if (user == null) {
+            System.out.println("RESULT: User not found in database.");
+            System.out.println("==============================\n");
+            return ResponseEntity.status(401).body("User not found");
+        }
+
+        System.out.println("Found User in DB:  [" + user.getFullName() + "]");
+        System.out.println("DB Password Hash:  [" + user.getPassword() + "]");
+
+        // Test the password
+        boolean isMatch = passwordEncoder.matches(password, user.getPassword());
+        System.out.println("Password Match?:   [" + isMatch + "]");
+        System.out.println("==============================\n");
+
+        if (isMatch) {
+            String jwt = jwtUtils.generateToken(user.getEmail()); 
+            return ResponseEntity.ok(Map.of(
+                "message", "Login Successful",
+                "token", jwt,  
+                "role", user.getRole(),
+                "name", user.getFullName()
+            ));
         } else {
             return ResponseEntity.status(401).body("Invalid Credentials");
         }
     }
-
     // --- FORGOT PASSWORD (Generate Link) ---
     @Autowired
-    private EmailService emailService; // Inject the service
+    private EmailService emailService; 
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {

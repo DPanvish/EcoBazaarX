@@ -1,40 +1,25 @@
 package com.ecobazaar.backend.service;
 
-import com.ecobazaar.backend.model.Order;
-import com.ecobazaar.backend.model.OrderItem;
-import com.ecobazaar.backend.repository.OrderRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
 
 @Service
 public class AnalyticsService {
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    public List<Map<String, Object>> getProductSalesAnalytics() {
-        List<Order> orders = orderRepository.findAll();
-
-        return orders.stream()
-                .flatMap(order -> order.getItems().stream())
-                .collect(Collectors.groupingBy(
-                        OrderItem::getProductName,
-                        Collectors.collectingAndThen(
-                                Collectors.toList(),
-                                list -> {
-                                    int sales = list.size();
-                                    double carbonSavings = list.stream().mapToDouble(OrderItem::getCo2Emission).sum();
-                                    Map<String, Object> map = new HashMap<>();
-                                    map.put("name", list.get(0).getProductName());
-                                    map.put("sales", sales);
-                                    map.put("carbonSavings", carbonSavings);
-                                    return map;
-                                })))
-                .values().stream().collect(Collectors.toList());
+    
+    public List<String> calculateUserBadges(Double lifetimeSavings) {
+        List<String> badges = new ArrayList<>();
+        if (lifetimeSavings == null || lifetimeSavings <= 0) {
+            badges.add("🌱 Newcomer");
+            return badges;
+        }
+        
+        if (lifetimeSavings >= 1.0) badges.add("🍃 First Sprout");
+        if (lifetimeSavings >= 10.0) badges.add("🌳 Tree Planter");
+        if (lifetimeSavings >= 50.0) badges.add("🌍 Carbon Ninja");
+        if (lifetimeSavings >= 100.0) badges.add("🦸‍♂️ Climate Hero");
+        
+        return badges;
     }
 }
