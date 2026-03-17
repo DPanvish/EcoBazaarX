@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { ShoppingCart, Leaf, X, Search, Activity, Package } from 'lucide-react';
+import { ShoppingCart, Leaf, X, Search, Activity, Package, LogOut } from 'lucide-react';
 import { motion } from 'framer-motion';
-import axiosInstance from '../lib/axios';
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '../lib/api';
@@ -29,6 +27,12 @@ const Shop = () => {
             console.error('Error fetching products:', error);
         }
     });
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('ecoCart'); 
+        navigate('/login');
+    };
 
     const filteredProducts = products.filter(product => {
         // If a product claims to be eco-friendly, it MUST be APPROVED by admin to be shown in the shop.
@@ -71,6 +75,14 @@ const Shop = () => {
                     >
                         <Package className="w-5 h-5" />
                         <span className="hidden sm:inline">My Orders</span>
+                    </button>
+
+                    <button 
+                        onClick={handleLogout} 
+                        className="flex items-center gap-2 text-red-400 hover:text-red-300 font-bold transition-all hover:scale-105"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        <span className="hidden sm:inline">Logout</span>
                     </button>
 
                     <button onClick={() => setIsCartOpen(true)} className="relative p-2 hover:bg-white/10 rounded-full transition-colors">
