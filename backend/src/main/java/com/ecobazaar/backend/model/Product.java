@@ -3,6 +3,8 @@ package com.ecobazaar.backend.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -62,6 +64,7 @@ public class Product {
     @Column(name = "carbon_saving")
     private Double carbonSaving;
 
+    @JsonProperty("isEcoFriendly")
     @Column(name = "is_eco_friendly")
     private boolean isEcoFriendly; 
 

@@ -12,7 +12,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 
-const stripePromise = loadStripe(process.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 // --- THE ACTUAL PAYMENT FORM COMPONENT ---
 const StripeCheckoutForm = ({ onSuccess, amount }) => {
@@ -76,6 +76,8 @@ const Checkout = () => {
     const [clientSecret, setClientSecret] = useState("");
     const [isCheckingOut, setIsCheckingOut] = useState(false);
 
+    const [shippingAddress, setShippingAddress] = useState("");
+
     const createOrderMutation = useMutation({
         mutationFn: (orderPayload) => orderApi.create(orderPayload),
         onSuccess: () => {
@@ -105,7 +107,8 @@ const Checkout = () => {
         const orderPayload = {
             items: cart,
             totalAmount: calculateTotalPrice(),
-            totalCo2: calculateTotalImpact()
+            totalCo2: calculateTotalImpact(),
+            shippingAddress: shippingAddress
         };
         createOrderMutation.mutate(orderPayload);
     };
@@ -147,12 +150,22 @@ const Checkout = () => {
                         <div className="bg-slate-900 border border-slate-800 p-8 rounded-3xl flex flex-col items-center justify-center text-center">
                             <ShieldCheck className="w-16 h-16 text-blue-400 mb-4" />
                             <h2 className="text-xl font-bold mb-2">Ready to complete your order?</h2>
-                            <p className="text-slate-400 mb-6">Review your impact cart on the right, then proceed to secure payment.</p>
+                            <p className="text-slate-400 mb-6">Review your impact cart, enter your address, and proceed to secure payment.</p>
+                            <div className="w-full max-w-md mb-6 text-left">
+                                <label className="block text-sm font-bold text-slate-400 mb-2">Shipping Address *</label>
+                                <textarea 
+                                    value={shippingAddress}
+                                    onChange={(e) => setShippingAddress(e.target.value)}
+                                    placeholder="123 Eco Street, Apt 4B, Green City, Earth 12345"
+                                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-green-500 resize-none h-24"
+                                    required
+                                />
+                            </div>
                             
                             <button 
                                 onClick={handleInitializePayment} 
-                                disabled={cart.length === 0 || isCheckingOut}
-                                className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl transition-all disabled:opacity-50"
+                                disabled={cart.length === 0 || isCheckingOut || shippingAddress.trim() === ""}
+                                className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isCheckingOut ? "Connecting to secure gateway..." : "Proceed to Payment"}
                             </button>
@@ -170,7 +183,11 @@ const Checkout = () => {
                                 cart.map((item, idx) => (
                                     <div key={idx} className="flex justify-between items-center bg-slate-950/50 p-3 rounded-xl border border-slate-800">
                                         <div className="flex items-center gap-3">
-                                            <img src={item.imageUrl} className="w-10 h-10 rounded-lg object-cover" />
+                                            <img 
+                                                src={item.imageUrls && item.imageUrls.length > 0 ? item.imageUrls[0] : '/placeholder-image.png'} 
+                                                alt={item.name} 
+                                                className="w-16 h-16 object-cover rounded-md" 
+                                            />
                                             <div>
                                                 <p className="text-sm font-bold text-white">{item.name}</p>
                                                 <p className="text-xs text-slate-500">{item.co2Emission} kg CO₂</p>

@@ -49,7 +49,10 @@ const AdminDashboard = () => {
     });
 
     const deleteProductMutation = useMutation({
-        mutationFn: productApi.delete,
+        mutationFn: async (id) => {
+            const { data } = await axiosInstance.delete(`/products/${id}`);
+            return data;
+        },
         onSuccess: () => queryClient.invalidateQueries(['products'])
     });
 

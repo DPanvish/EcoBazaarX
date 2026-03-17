@@ -46,6 +46,9 @@ public class OrderService {
         Double totalAmount = Double.valueOf(orderRequest.get("totalAmount").toString());
         Double totalCo2 = Double.valueOf(orderRequest.get("totalCo2").toString());
 
+        String shippingAddress = orderRequest.containsKey("shippingAddress") ? 
+                                 orderRequest.get("shippingAddress").toString() : "No Address Provided";
+
         List<Map<String, Object>> cartItems = (List<Map<String, Object>>) orderRequest.get("items");
         List<OrderItem> orderItems = cartItems.stream().map(item -> {
             return OrderItem.builder()
@@ -60,6 +63,7 @@ public class OrderService {
                 .userEmail(userEmail)
                 .totalAmount(totalAmount)
                 .totalCo2Saved(totalCo2)
+                .shippingAddress(shippingAddress) 
                 .orderDate(LocalDateTime.now())
                 .status("COMPLETED")
                 .items(orderItems)

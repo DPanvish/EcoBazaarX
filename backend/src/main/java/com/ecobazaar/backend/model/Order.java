@@ -24,6 +24,9 @@ public class Order {
     private Double totalCo2Saved; 
     private LocalDateTime orderDate;
     private String status;
+    
+    @Column(length = 500) 
+    private String shippingAddress; 
 
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "order_id")
